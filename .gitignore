@@ -2,5 +2,7 @@
 /.parcel-cache
 /dist
 /static/ruby.wasm
+/build-sdk
+/build
 
 .vercel
