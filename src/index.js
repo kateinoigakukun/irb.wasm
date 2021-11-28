@@ -58,6 +58,8 @@ class LineBuffer {
         switch (data) {
             case "\r": {
                 this.term.write("\r\n");
+                // always put a newline at last
+                this.cursorPosition = this.stdinBuffer.length;
                 this._pushChar("\n");
 
                 const sending = this.stdinBuffer;
