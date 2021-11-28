@@ -1,8 +1,5 @@
 {
   "name": "cruby-web-irb",
-  "scripts": {
-    "vercel-build": "./tools/vercel-build.sh"
-  },
   "dependencies": {
     "@wasmer/wasi": "^0.12.0",
     "@wasmer/wasmfs": "^0.12.0",
