@@ -54,7 +54,7 @@ Comlink.expose({
 
         const args = [
             "ruby.wasm",
-            "-I/embd-root/gems/lib", "-I/embd-root/ext/ripper/lib", "-I/embd-root/lib",
+            "-I/embd-root/gems/lib", "-I/embd-root/lib", "-I/embd-root/lib/wasm32-wasi",
             "/embd-root/gems/libexec/irb", "--prompt", "default"
         ];
 
