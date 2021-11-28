@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "$(dirname $0)"/.. && pwd)"
 RUBY_REPO=https://github.com/kateinoigakukun/ruby.git
 RUBY_BRANCH=katei/poc-wasm-unknown-wasi-with-rb-wasm-support
 
-WASI_VFS_REPO="https://${WASI_VFS_ACCESS_TOKEN}:x-oauth-basic@github.com/kateinoigakukun/wasi-vfs.git"
+WASI_VFS_REPO=git@github.com:kateinoigakukun/wasi-vfs.git
 
 BUILD_SDK="$PWD/build-sdk"
 BUILD_DIR="$PWD/build"
@@ -49,6 +49,7 @@ function build_ruby() {
     ./configure \
         --host wasm32-unknown-wasi \
         --prefix=$RUBY_INSTALL_PREFIX \
+        --disable-install-doc \
         --with-static-linked-ext \
         --with-coroutine=asyncify \
         --disable-jit-support \
@@ -79,7 +80,7 @@ function build_ruby() {
         "
 
     # prefer dummy wasm-opt to avoid mis-optimization by wasm-opt -O3
-    (PATH="$BUILD_SDK/dmybin:$PATH"; make install -j8)
+    (PATH="$BUILD_SDK/dmybin:$PATH"; make install)
     popd
 }
 

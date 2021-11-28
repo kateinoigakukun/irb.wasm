@@ -4,5 +4,6 @@
 /static/ruby.wasm
 /build-sdk
 /build
+!.gitkeep
 
 .vercel

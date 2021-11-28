@@ -1,0 +1,66 @@
+name: Build
+on:
+  push:
+    branches: [main]
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup SSH Keys and known_hosts for wasi-vfs
+        run: |
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add - <<< "${{ secrets.WASI_VFS_DEPLOY_PRIVATE_KEY }}"
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh-agent.sock
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - name: Install build tools from apt
+        run: |
+          sudo apt install autoconf automake
+          brew install binaryen
+      - name: Setup build SDK
+        run: |
+          mkdir build-sdk
+          cd build-sdk
+          curl -LO https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-14/wasi-sdk-14.0-linux.tar.gz
+          tar xfz wasi-sdk-14.0-linux.tar.gz
+          mv wasi-sdk-14.0 wasi-sdk
+          curl -LO https://github.com/kateinoigakukun/rb-wasm-support/releases/download/0.4.0/rb-wasm-support-wasm32-unknown-wasi.tar.gz
+          tar xfz rb-wasm-support-wasm32-unknown-wasi.tar.gz
+          mkdir -p dmybin
+          ln -fs /usr/bin/true ./dmybin/wasm-opt
+
+      - name: Workaround for Debian ruby distribution
+        run: |
+          # avoid using system rubygems while installing docs
+          # related issue: https://github.com/rubygems/rubygems/issues/3831
+          sudo rm -rf /usr/lib/ruby/vendor_ruby/rubygems/defaults
+      - name: Set ENV
+        run: |
+          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
+      - name: Build irb
+        run: ./tools/build-irb.sh
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh-agent.sock
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ruby.wasm
+          path: static/ruby.wasm
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: "16"
+      - name: Bundle web resources
+        run: |
+          npm install
+          npx parcel build index.html
+      - uses: actions/upload-artifact@v2
+        with:
+          name: dist
+          path: dist
+
+
