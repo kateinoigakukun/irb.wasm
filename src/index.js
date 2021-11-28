@@ -25,6 +25,7 @@ function createTerminal() {
 class LineBuffer {
     constructor(stdinConnection, term) {
         this.stdinBuffer = [];
+        this.cursorPosition = 0;
         this.sendingQueue = [];
         this.stdinConnection = stdinConnection;
         this.term = term;
@@ -34,15 +35,14 @@ class LineBuffer {
         if (data.length > 1) {
             throw new Error(`FIXME(katei): input data is larger than 1, data = ${data}`);
         }
-        console.log(data.charCodeAt(0))
         switch (data) {
             case "\r": {
                 this.term.write("\r\n");
-                console.log(this.stdinBuffer)
-                this.stdinBuffer.push("\n");
+                this._pushChar("\n");
 
                 const sending = this.stdinBuffer;
                 this.stdinBuffer = [];
+                this.cursorPosition = 0;
                 for (const byte of sending) {
                     // FIXME(katei): Don't wait by busy loop
                     while (!this.isReadyToSend()) {}
@@ -50,7 +50,21 @@ class LineBuffer {
                 }
                 break;
             }
-            case "\x7f": {
+            case "\x06": { // CTRL+F
+                if (this.cursorPosition < this.stdinBuffer.length) {
+                    this.cursorPosition += 1;
+                    this.term.write("\x1b[C")
+                }
+                break;
+            }
+            case "\x02": { // CTRL+B
+                if (this.cursorPosition > 0) {
+                    this.cursorPosition -= 1;
+                    this.term.write("\x1b[D")
+                }
+                break;
+            }
+            case "\x7f": { // CTRL + BACKSPACE
                 if (this.stdinBuffer.length > 0) {
                     this.stdinBuffer.pop();
                     this.term.write("\b \b");
@@ -59,11 +73,31 @@ class LineBuffer {
                 break;
             }
             default: {
-                this.stdinBuffer.push(data);
+                const ord = data.charCodeAt(0);
+                const shouldIgnore = ord < 32 || ord === 0x7f;
+                if (shouldIgnore) {
+                    break;
+                }
+
+                const trailing = this.stdinBuffer.slice(this.cursorPosition);
+                this._pushChar(data);
                 this.term.write(data);
+
+                // If cursor is not at the tail, shift the trailing chars
+                // and restore the current cursor
+                for (const char of trailing) {
+                    this.term.write(char);
+                }
+                for (let idx = 0; idx < trailing.length; idx++) {
+                    this.term.write("\x1b[D");
+                }
                 break;
             }
         }
+    }
+    _pushChar(char) {
+        this.stdinBuffer.splice(this.cursorPosition, 0, char);
+        this.cursorPosition += 1;
     }
 
     sendToWorker(char) {
