@@ -32,8 +32,28 @@ class LineBuffer {
         this.textEncoder = new TextEncoder();
     }
     handleTermData(data) {
+        const ord = data.charCodeAt(0);
+
+        if (ord == 0x1b) {
+            switch (data.substr(1)) {
+                case "[D": { // Left Arrow
+                    this.moveCursorLeft();
+                    break;
+                }
+                case "[C": { // Right Arrow
+                    this.moveCursorRight();
+                    break;
+                }
+                default: {
+                    // ignore
+                    break;
+                }
+            }
+            return;
+        }
+
         if (data.length > 1) {
-            throw new Error(`FIXME(katei): input data is larger than 1, data = ${data}`);
+            throw new Error(`FIXME(katei): input data is larger than 1 and not ANSI escape sequence, data = ${data}`);
         }
         switch (data) {
             case "\r": {
@@ -45,23 +65,17 @@ class LineBuffer {
                 this.cursorPosition = 0;
                 for (const byte of sending) {
                     // FIXME(katei): Don't wait by busy loop
-                    while (!this.isReadyToSend()) {}
+                    while (!this.isReadyToSend()) { }
                     this.sendToWorker(byte)
                 }
                 break;
             }
             case "\x06": { // CTRL+F
-                if (this.cursorPosition < this.stdinBuffer.length) {
-                    this.cursorPosition += 1;
-                    this.term.write("\x1b[C")
-                }
+                this.moveCursorRight();
                 break;
             }
             case "\x02": { // CTRL+B
-                if (this.cursorPosition > 0) {
-                    this.cursorPosition -= 1;
-                    this.term.write("\x1b[D")
-                }
+                this.moveCursorLeft();
                 break;
             }
             case "\x7f": { // CTRL + BACKSPACE
@@ -69,7 +83,6 @@ class LineBuffer {
                     this.stdinBuffer.pop();
                     this.term.write("\b \b");
                 }
-                console.log(this.stdinBuffer)
                 break;
             }
             default: {
@@ -93,6 +106,19 @@ class LineBuffer {
                 }
                 break;
             }
+        }
+    }
+
+    moveCursorLeft() {
+        if (this.cursorPosition > 0) {
+            this.cursorPosition -= 1;
+            this.term.write("\x1b[D")
+        }
+    }
+    moveCursorRight() {
+        if (this.cursorPosition < this.stdinBuffer.length) {
+            this.cursorPosition += 1;
+            this.term.write("\x1b[C")
         }
     }
     _pushChar(char) {
