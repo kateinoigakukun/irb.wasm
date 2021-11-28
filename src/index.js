@@ -143,7 +143,15 @@ class LineBuffer {
     }
 }
 
+function checkAvailability() {
+    if (typeof SharedArrayBuffer == "undefined") {
+        alert("Your browser doesn't support SharedArrayBuffer now. Please use the latest Chrome.")
+        throw new Error("no SharedArrayBuffer");
+    }
+}
+
 async function init() {
+    checkAvailability()
     const term = createTerminal();
     const irbWorker = Comlink.wrap(
         new Worker(new URL("irb-worker.js", import.meta.url), {
