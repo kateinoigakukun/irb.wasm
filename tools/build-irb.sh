@@ -6,7 +6,7 @@ REPO_ROOT="$(cd "$(dirname $0)"/.. && pwd)"
 RUBY_REPO=https://github.com/kateinoigakukun/ruby.git
 RUBY_BRANCH=katei/poc-wasm-unknown-wasi-with-rb-wasm-support
 
-WASI_VFS_REPO=git@github.com:kateinoigakukun/wasi-vfs.git
+WASI_VFS_REPO="https://${WASI_VFS_ACCESS_TOKEN}:x-oauth-basic@github.com/kateinoigakukun/wasi-vfs.git"
 
 BUILD_SDK="$PWD/build-sdk"
 BUILD_DIR="$PWD/build"
