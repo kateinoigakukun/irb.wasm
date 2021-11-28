@@ -12,9 +12,7 @@ class Stdin {
         Atomics.store(this.stdinBuffer, STDIN_INDEX_STATE, STDIN_STATE_WAITING);
         Atomics.wait(this.stdinBuffer, STDIN_INDEX_STATE, STDIN_STATE_WAITING);
         const byte = Atomics.load(this.stdinBuffer, STDIN_INDEX_INPUT);
-        if (byte == 13) {
-            return 10;
-        }
+        console.log("term -> irb: ", byte)
         return byte
     }
 }
@@ -35,6 +33,7 @@ Comlink.expose({
                 case 1:
                 case 2: {
                     const text = textDecoder.decode(buffer);
+                    console.log("irb -> term: ", text)
                     termWriter(text)
                     break;
                 }

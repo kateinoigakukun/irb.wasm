@@ -2,7 +2,7 @@ import "xterm/css/xterm.css"
 import { Terminal } from "xterm"
 import { FitAddon } from "xterm-addon-fit";
 import * as Comlink from "comlink"
-import { STDIN_INDEX_INPUT, STDIN_INDEX_STATE, STDIN_STATE_NORMAL } from "./sync-stdin";
+import { STDIN_INDEX_INPUT, STDIN_INDEX_STATE, STDIN_STATE_NORMAL, STDIN_STATE_WAITING } from "./sync-stdin";
 
 function createTerminal() {
     const term = new Terminal({
@@ -22,6 +22,65 @@ function createTerminal() {
     return term;
 }
 
+class LineBuffer {
+    constructor(stdinConnection, term) {
+        this.stdinBuffer = [];
+        this.sendingQueue = [];
+        this.stdinConnection = stdinConnection;
+        this.term = term;
+        this.textEncoder = new TextEncoder();
+    }
+    handleTermData(data) {
+        if (data.length > 1) {
+            throw new Error(`FIXME(katei): input data is larger than 1, data = ${data}`);
+        }
+        console.log(data.charCodeAt(0))
+        switch (data) {
+            case "\r": {
+                this.term.write("\r\n");
+                console.log(this.stdinBuffer)
+                this.stdinBuffer.push("\n");
+
+                const sending = this.stdinBuffer;
+                this.stdinBuffer = [];
+                for (const byte of sending) {
+                    // FIXME(katei): Don't wait by busy loop
+                    while (!this.isReadyToSend()) {}
+                    this.sendToWorker(byte)
+                }
+                break;
+            }
+            case "\x7f": {
+                if (this.stdinBuffer.length > 0) {
+                    this.stdinBuffer.pop();
+                    this.term.write("\b \b");
+                }
+                console.log(this.stdinBuffer)
+                break;
+            }
+            default: {
+                this.stdinBuffer.push(data);
+                this.term.write(data);
+                break;
+            }
+        }
+    }
+
+    sendToWorker(char) {
+        const buf = new Int32Array(this.stdinConnection);
+        const bytes = this.textEncoder.encode(char);
+        Atomics.store(buf, STDIN_INDEX_INPUT, bytes[0]);
+        Atomics.store(buf, STDIN_INDEX_STATE, STDIN_STATE_NORMAL);
+        Atomics.notify(buf, STDIN_INDEX_STATE)
+    }
+
+    isReadyToSend() {
+        const buf = new Int32Array(this.stdinConnection);
+        const state = Atomics.load(buf, STDIN_INDEX_STATE)
+        return state == STDIN_STATE_WAITING;
+    }
+}
+
 async function init() {
     const term = createTerminal();
     const irbWorker = Comlink.wrap(
@@ -30,33 +89,16 @@ async function init() {
         })
     );
 
-    const stdinBuffer = new SharedArrayBuffer(16);
-    irbWorker.init(Comlink.proxy((text) => {
-        term.write(text.replaceAll(/\n/g, '\r\n'))
-    }), stdinBuffer)
+    const stdinConnection = new SharedArrayBuffer(16);
+    const lineBuffer = new LineBuffer(stdinConnection, term);
+    irbWorker.init(
+        Comlink.proxy((text) => {
+            term.write(text.replaceAll(/\n/g, '\r\n'))
+        }),
+        stdinConnection
+    )
 
-    term.onKey(event => {
-        const ev = event.domEvent
-        const printable = !ev.altKey && !ev.ctrlKey && !ev.metaKey;
-
-        if (ev.key == "Enter") {
-            term.write("\r\n");
-        } else if (printable) {
-            term.write(ev.key);
-        }
-    });
-
-    const textEncoder = new TextEncoder();
-    term.onData((data) => {
-        const buf = new Int32Array(stdinBuffer);
-        const bytes = textEncoder.encode(data);
-        if (bytes.length > 1) {
-            throw new Error(`FIXME(katei): input data is larger than 1 byte, bytes = ${bytes}`);
-        }
-        Atomics.store(buf, STDIN_INDEX_INPUT, bytes[0]);
-        Atomics.store(buf, STDIN_INDEX_STATE, STDIN_STATE_NORMAL);
-        Atomics.notify(buf, STDIN_INDEX_STATE)
-    })
+    term.onData((data) => { lineBuffer.handleTermData(data) })
     window.term = term;
 }
 
