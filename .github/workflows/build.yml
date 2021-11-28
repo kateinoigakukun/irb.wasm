@@ -63,6 +63,7 @@ jobs:
           name: dist
           path: dist
 
+      - run: cp ./vercel.json ./dist
       - uses: amondnet/vercel-action@v20
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
