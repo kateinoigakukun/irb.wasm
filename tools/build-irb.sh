@@ -53,7 +53,7 @@ function build_ruby() {
         --with-static-linked-ext \
         --with-coroutine=asyncify \
         --disable-jit-support \
-        --with-ext=ripper,monitor \
+        --with-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,gdbm,json,json/generator,json/parser,nkf,objspace,pathname,psych,racc/cparse,rbconfig/sizeof,ripper,stringio,strscan,monitor \
         CC=$BUILD_SDK/wasi-sdk/bin/clang \
         LD=$BUILD_SDK/wasi-sdk/bin/clang \
         AR=$BUILD_SDK/wasi-sdk/bin/llvm-ar \
