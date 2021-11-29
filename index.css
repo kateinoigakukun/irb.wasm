@@ -1,5 +1,8 @@
 div#terminal {
     height: 100%;
+    --color: #ffffff;
+    --size: 1.3;
+    --font: sfmono-regular,consolas,menlo,dejavu sans mono,monospace
 }
 
 html, body {
