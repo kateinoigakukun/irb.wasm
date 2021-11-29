@@ -34,7 +34,11 @@ class LineBuffer {
         this.stdinProducer = stdinProducer;
         this.term = term;
     }
-    handleTermData(data) {
+    handleTermData(data: string) {
+        this.handleTermDataInner(data);
+        console.log(`receive: ${data}, stdinBuffer: ${this.stdinBuffer}`)
+    }
+    handleTermDataInner(data: string) {
         const ord = data.charCodeAt(0);
 
         if (ord == 0x1b) {
@@ -80,9 +84,22 @@ class LineBuffer {
                 break;
             }
             case "\x7f": { // CTRL + BACKSPACE
-                if (this.stdinBuffer.length > 0) {
-                    this.stdinBuffer.pop();
+                if (this.cursorPosition > 0) {
+                    const trailing = this.stdinBuffer.slice(this.cursorPosition);
+                    this.stdinBuffer.splice(this.cursorPosition - 1, 1)
+                    this.cursorPosition -= 1;
                     this.term.write("\b \b");
+
+                    // If cursor is not at the tail, shift the trailing chars
+                    // and restore the current cursor
+                    for (const char of trailing) {
+                        this.term.write(char);
+                    }
+                    this.term.write("\x1b[C")
+                    this.term.write("\b \b");
+                    for (let idx = 0; idx < trailing.length; idx++) {
+                        this.term.write("\x1b[D");
+                    }
                 }
                 break;
             }
