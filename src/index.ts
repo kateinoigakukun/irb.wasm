@@ -3,9 +3,11 @@ import { StdinProducer } from "./sync-stdin";
 import jQuery from "jquery"
 // @ts-ignore
 import initTerminalPlugin from "jquery.terminal";
+import initUnixFormatting from "jquery.terminal/js/unix_formatting"
 import "jquery.terminal/css/jquery.terminal.css"
 
 initTerminalPlugin(jQuery)
+initUnixFormatting(window, jQuery)
 
 function checkAvailability() {
     if (typeof SharedArrayBuffer == "undefined") {
@@ -34,7 +36,7 @@ async function init() {
     const stdinConnection = new SharedArrayBuffer(16);
     const stdinProducer = new StdinProducer(new Int32Array(stdinConnection));
 
-    const term = jQuery("#terminal").terminal((line, term) => {
+    const term = jQuery("#terminal").terminal((line) => {
         stdinProducer.writeLine(Array.from(line + "\n"))
     }, {
         greetings: null,
