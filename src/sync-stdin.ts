@@ -4,7 +4,10 @@ const STDIN_STATE_NORMAL = 0;
 const STDIN_STATE_WAITING = 1;
 
 export class StdinConsumer {
-    constructor(buffer, requestStdinByte) {
+    private buffer: Int32Array;
+    private requestStdinByte: () => void;
+
+    constructor(buffer: Int32Array, requestStdinByte: () => void) {
         this.buffer = buffer;
         this.requestStdinByte = requestStdinByte;
     }
@@ -23,8 +26,11 @@ export class StdinConsumer {
 }
 
 export class StdinProducer {
+    waitingQueue: number[];
+    buffer: Int32Array;
+    textEncoder: TextEncoder;
 
-    constructor(buffer) {
+    constructor(buffer: Int32Array) {
         this.waitingQueue = [];
         this.buffer = buffer;
         this.textEncoder = new TextEncoder();

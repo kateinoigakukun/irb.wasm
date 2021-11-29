@@ -15,6 +15,7 @@ Comlink.expose({
 
         const textDecoder = new TextDecoder("utf-8");
         const originalWriteSync = wasmFs.fs.writeSync;
+        // @ts-ignore
         wasmFs.fs.writeSync = (fd, buffer, offset, length, position) => {
             switch (fd) {
                 case 1:

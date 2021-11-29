@@ -23,7 +23,12 @@ function createTerminal() {
 }
 
 class LineBuffer {
-    constructor(stdinProducer, term) {
+    private stdinBuffer: string[];
+    private stdinProducer: StdinProducer;
+    private cursorPosition: number;
+    private term: Terminal;
+
+    constructor(stdinProducer: StdinProducer, term: Terminal) {
         this.stdinBuffer = [];
         this.cursorPosition = 0;
         this.stdinProducer = stdinProducer;
@@ -130,11 +135,20 @@ function checkAvailability() {
     }
 }
 
+interface IrbWorker {
+    init(
+        termWriter: (_: string) => void,
+        requestStdinByte: () => void,
+        stdinBuffer: SharedArrayBuffer
+    ): void;
+}
+
 async function init() {
     checkAvailability()
     const term = createTerminal();
-    const irbWorker = Comlink.wrap(
-        new Worker(new URL("irb-worker.js", import.meta.url), {
+    const irbWorker: Comlink.Remote<IrbWorker> = Comlink.wrap(
+        // @ts-ignore
+        new Worker(new URL("irb-worker.ts", import.meta.url), {
             type: "module"
         })
     );
@@ -144,15 +158,16 @@ async function init() {
     const lineBuffer = new LineBuffer(stdinProducer, term);
     irbWorker.init(
         /* termWriter: */ Comlink.proxy((text) => {
-            term.write(text.replaceAll(/\n/g, '\r\n'))
-        }),
+        term.write(text.replaceAll(/\n/g, '\r\n'))
+    }),
         /* requestStdinByte: */ Comlink.proxy(() => {
-            stdinProducer.onNewRequest();
-        }),
+        stdinProducer.onNewRequest();
+    }),
         stdinConnection
     )
 
     term.onData((data) => { lineBuffer.handleTermData(data) })
+    // @ts-ignore
     window.term = term;
 }
 
