@@ -1,29 +1,16 @@
 import * as Comlink from "comlink"
 import { WASI } from "@wasmer/wasi";
 import { WasmFs } from "@wasmer/wasmfs";
-import { STDIN_INDEX_INPUT, STDIN_INDEX_STATE, STDIN_STATE_WAITING } from "./sync-stdin"
-
-class Stdin {
-    constructor(stdinBuffer) {
-        this.stdinBuffer = stdinBuffer;
-    }
-
-    readSync() {
-        Atomics.store(this.stdinBuffer, STDIN_INDEX_STATE, STDIN_STATE_WAITING);
-        Atomics.wait(this.stdinBuffer, STDIN_INDEX_STATE, STDIN_STATE_WAITING);
-        const byte = Atomics.load(this.stdinBuffer, STDIN_INDEX_INPUT);
-        console.log("term -> irb: ", byte)
-        return byte
-    }
-}
+import { StdinConsumer } from "./sync-stdin"
 
 Comlink.expose({
     instance: null,
-    async init(termWriter, stdinBuffer) {
+    async init(termWriter, requestStdinByte, stdinBuffer) {
         const response = await fetch("./ruby.wasm");
         const buffer = await response.arrayBuffer();
 
-        const stdin = new Stdin(new Int32Array(stdinBuffer));
+        console.log(requestStdinByte)
+        const stdin = new StdinConsumer(new Int32Array(stdinBuffer), requestStdinByte)
         const wasmFs = new WasmFs();
 
         const textDecoder = new TextDecoder("utf-8");

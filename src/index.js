@@ -2,7 +2,7 @@ import "xterm/css/xterm.css"
 import { Terminal } from "xterm"
 import { FitAddon } from "xterm-addon-fit";
 import * as Comlink from "comlink"
-import { STDIN_INDEX_INPUT, STDIN_INDEX_STATE, STDIN_STATE_NORMAL, STDIN_STATE_WAITING } from "./sync-stdin";
+import { StdinProducer } from "./sync-stdin";
 
 function createTerminal() {
     const term = new Terminal({
@@ -23,13 +23,11 @@ function createTerminal() {
 }
 
 class LineBuffer {
-    constructor(stdinConnection, term) {
+    constructor(stdinProducer, term) {
         this.stdinBuffer = [];
         this.cursorPosition = 0;
-        this.sendingQueue = [];
-        this.stdinConnection = stdinConnection;
+        this.stdinProducer = stdinProducer;
         this.term = term;
-        this.textEncoder = new TextEncoder();
     }
     handleTermData(data) {
         const ord = data.charCodeAt(0);
@@ -65,11 +63,7 @@ class LineBuffer {
                 const sending = this.stdinBuffer;
                 this.stdinBuffer = [];
                 this.cursorPosition = 0;
-                for (const byte of sending) {
-                    // FIXME(katei): Don't wait by busy loop
-                    while (!this.isReadyToSend()) { }
-                    this.sendToWorker(byte)
-                }
+                this.stdinProducer.writeLine(sending);
                 break;
             }
             case "\x06": { // CTRL+F
@@ -127,20 +121,6 @@ class LineBuffer {
         this.stdinBuffer.splice(this.cursorPosition, 0, char);
         this.cursorPosition += 1;
     }
-
-    sendToWorker(char) {
-        const buf = new Int32Array(this.stdinConnection);
-        const bytes = this.textEncoder.encode(char);
-        Atomics.store(buf, STDIN_INDEX_INPUT, bytes[0]);
-        Atomics.store(buf, STDIN_INDEX_STATE, STDIN_STATE_NORMAL);
-        Atomics.notify(buf, STDIN_INDEX_STATE)
-    }
-
-    isReadyToSend() {
-        const buf = new Int32Array(this.stdinConnection);
-        const state = Atomics.load(buf, STDIN_INDEX_STATE)
-        return state == STDIN_STATE_WAITING;
-    }
 }
 
 function checkAvailability() {
@@ -160,10 +140,14 @@ async function init() {
     );
 
     const stdinConnection = new SharedArrayBuffer(16);
-    const lineBuffer = new LineBuffer(stdinConnection, term);
+    const stdinProducer = new StdinProducer(new Int32Array(stdinConnection));
+    const lineBuffer = new LineBuffer(stdinProducer, term);
     irbWorker.init(
-        Comlink.proxy((text) => {
+        /* termWriter: */ Comlink.proxy((text) => {
             term.write(text.replaceAll(/\n/g, '\r\n'))
+        }),
+        /* requestStdinByte: */ Comlink.proxy(() => {
+            stdinProducer.onNewRequest();
         }),
         stdinConnection
     )
