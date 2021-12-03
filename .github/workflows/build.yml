@@ -33,7 +33,13 @@ jobs:
           tar xfz rb-wasm-support-wasm32-unknown-wasi.tar.gz
           mkdir -p dmybin
           ln -fs /usr/bin/true ./dmybin/wasm-opt
-
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install rbwasm
+        run: cargo install rbwasm --git https://github.com/kateinoigakukun/rbwasm
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh-agent.sock
       - name: Workaround for Debian ruby distribution
         run: |
           # avoid using system rubygems while installing docs
@@ -44,8 +50,6 @@ jobs:
           echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
       - name: Build irb
         run: ./tools/build-irb.sh
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh-agent.sock
       - uses: actions/upload-artifact@v2
         with:
           name: ruby.wasm

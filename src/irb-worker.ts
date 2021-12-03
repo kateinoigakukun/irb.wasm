@@ -40,9 +40,7 @@ Comlink.expose({
         };
 
         const args = [
-            "ruby.wasm",
-            "-I/embd-root/gems/lib", "-I/embd-root/lib", "-I/embd-root/lib/wasm32-wasi",
-            "/embd-root/gems/libexec/irb", "--prompt", "default"
+            "ruby.wasm", "-I/embd-root/gems/lib", "/embd-root/gems/libexec/irb", "--prompt", "default"
         ];
 
         termWriter("$ " + args.join(" ") + "\r\n");
