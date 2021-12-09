@@ -61,7 +61,7 @@ jobs:
       - name: Bundle web resources
         run: |
           npm install
-          npx parcel build src/index.html
+          npx parcel build src/index.html src/playground.html
       - uses: actions/upload-artifact@v2
         with:
           name: dist
