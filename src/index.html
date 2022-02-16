@@ -1,13 +1,29 @@
-<!doctype html>
+<!DOCTYPE html>
 
 <head>
-    <link rel="stylesheet" href="./index.css">
+  <link rel="stylesheet" href="./index.css" />
+  <meta
+    name="description"
+    content="irb.wasm: IRB on browser powered by wasm"
+  />
+  <meta property="og:image" content="./images/ruby.png" />
+  <meta
+    property="og:title"
+    content="irb.wasm: IRB on browser powered by wasm"
+  />
+  <meta
+    property="og:description"
+    content="You can try irb.wasm on your browser. It works on CRuby ported to WebAssembly."
+  />
+  <meta name="viewport" content="width=device-width" />
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💎</text></svg>"
+  />
 </head>
 <html>
-
-<body>
+  <body>
     <div id="terminal"></div>
-    <script type="module" src="./index.ts" ></script>
-</body>
-
+    <script type="module" src="./index.ts"></script>
+  </body>
 </html>
