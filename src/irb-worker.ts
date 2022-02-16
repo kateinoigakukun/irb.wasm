@@ -43,6 +43,7 @@ Comlink.expose({
             "irb.wasm", "-I/gems/lib", "/gems/libexec/irb", "--prompt", "default"
         ];
 
+        termWriter("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
         termWriter("$ " + args.join(" ") + "\r\n");
         const wasi = new WASI({
             args,
