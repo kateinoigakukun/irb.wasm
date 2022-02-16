@@ -1,10 +1,8 @@
 /node_modules
 /.parcel-cache
 /dist
-/static/ruby.wasm
-/build-sdk
-/build
+/rubies
+/static/irb.wasm
 !.gitkeep
 
 .vercel
-/.rbwasm

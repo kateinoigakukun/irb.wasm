@@ -6,7 +6,7 @@ import { StdinConsumer } from "./sync-stdin"
 Comlink.expose({
     instance: null,
     async init(termWriter, requestStdinByte, stdinBuffer) {
-        const response = await fetch("./ruby.wasm");
+        const response = await fetch("./irb.wasm");
         const buffer = await response.arrayBuffer();
 
         console.log(requestStdinByte)
@@ -40,7 +40,7 @@ Comlink.expose({
         };
 
         const args = [
-            "ruby.wasm", "-I/embd-root/gems/lib", "/embd-root/gems/libexec/irb", "--prompt", "default"
+            "irb.wasm", "-I/gems/lib", "/gems/libexec/irb", "--prompt", "default"
         ];
 
         termWriter("$ " + args.join(" ") + "\r\n");
