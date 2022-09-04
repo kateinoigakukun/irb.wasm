@@ -22,6 +22,7 @@ interface IrbWorker {
         requestStdinByte: () => void,
         stdinBuffer: SharedArrayBuffer
     ): void;
+    start(): void;
 }
 
 async function init() {
@@ -42,8 +43,13 @@ async function init() {
         greetings: null,
         prompt: "",
     });
+    // @ts-ignore
+    window.irbWorker = irbWorker
+    console.log("irbWorker", irbWorker)
+    // @ts-ignore
+    window.term = term;
 
-    irbWorker.init(
+    await irbWorker.init(
         /* termWriter: */ Comlink.proxy((text) => {
         term.echo(text, { newline: false })
     }),
@@ -53,8 +59,7 @@ async function init() {
         stdinConnection
     )
 
-    // @ts-ignore
-    window.term = term;
+    irbWorker.start();
 }
 
 init()

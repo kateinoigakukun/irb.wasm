@@ -1,5 +1,5 @@
-RUBY_CHANNEL = head-wasm32-unknown-wasi-full
-RUBY_SNAPSHOT = 2022-04-09-a
+RUBY_CHANNEL = head-wasm32-unknown-wasi-full-debug
+RUBY_SNAPSHOT = 2022-08-15-a
 RUBY_ROOT = rubies/$(RUBY_CHANNEL)
 
 $(RUBY_ROOT):

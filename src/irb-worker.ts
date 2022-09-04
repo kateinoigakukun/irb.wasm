@@ -5,6 +5,7 @@ import { StdinConsumer } from "./sync-stdin"
 
 Comlink.expose({
     instance: null,
+    wasi: null,
     async init(termWriter, requestStdinByte, stdinBuffer) {
         const response = await fetch("./irb.wasm");
         const buffer = await response.arrayBuffer();
@@ -40,14 +41,16 @@ Comlink.expose({
         };
 
         const args = [
-            "irb.wasm", "-I/gems/lib", "/gems/libexec/irb", "--prompt", "default"
+            "irb.wasm", "-I/gems/lib", "-I/gems/io-console-1.0.0/lib", "/gems/libexec/irb", "--prompt", "default"
         ];
 
         termWriter("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
         termWriter("$ " + args.join(" ") + "\r\n");
         const wasi = new WASI({
             args,
-            env: {},
+            env: {
+                "GEM_PATH": "/gems"
+            },
             bindings: {
                 ...WASI.defaultBindings,
                 fs: wasmFs.fs,
@@ -58,6 +61,9 @@ Comlink.expose({
             wasi_snapshot_preview1: wasi.wasiImport,
         });
         this.instance = instance;
-        wasi.start(instance);
+        this.wasi = wasi
     },
+    start() {
+        this.wasi.start(this.instance);
+    }
 })
