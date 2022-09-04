@@ -29,7 +29,8 @@ class ResumptionQueue {
             }
         }
         if (!oldestTask) {
-            throw new Error(`No running task of kind ${kind} found`);
+            console.warn(`No running task of kind ${kind} found`);
+            return;
         }
         oldestTask.state = "done";
         oldestTask.value1 = value1;
@@ -71,7 +72,6 @@ export class IRB {
                 case 1:
                 case 2: {
                     const text = textDecoder.decode(buffer);
-                    console.log("irb -> term: ", text)
                     termWriter(text)
                     break;
                 }
@@ -87,14 +87,18 @@ export class IRB {
         termWriter("$ " + args.join(" ") + "\r\n");
         const vm = new RubyVM();
         wasmFs.fs.mkdirSync("/home/me", { mode: 0o777, recursive: true });
+        wasmFs.fs.mkdirSync("/home/me/.gem/specs", { mode: 0o777, recursive: true });
+        wasmFs.fs.writeFileSync("/dev/null", new Uint8Array(0));
         const wasi = new WASI({
             args,
             env: {
-                "GEM_PATH": "/gems",
+                "GEM_PATH": "/gems:/home/me/.gem/ruby/3.2.0+2",
+                "GEM_SPEC_CACHE": "/home/me/.gem/specs",
                 "RUBY_FIBER_MACHINE_STACK_SIZE": String(1024 * 1024 * 20),
             },
             preopens: {
-                "/home/me": "/home/me",
+                "/home": "/home",
+                "/dev": "/dev",
             },
             bindings: {
                 ...WASI.defaultBindings,
@@ -102,8 +106,41 @@ export class IRB {
                 path: path,
             }
         });
+
+        const wrapWASI = (wasiObject) => {
+            for (const key in wasiObject.wasiImport) {
+                const func = wasiObject.wasiImport[key]
+                wasiObject.wasiImport[key] = function () {
+                    // console.log(`[tracing] WASI.${key}`);
+                    const ret = Reflect.apply(func, undefined, arguments);
+                    if (ret !== 0) {
+                        console.warn(`[tracing] WASI.${key} returned ${ret}`);
+                    }
+                    return ret
+                }
+            }
+            // PATCH: @wasmer-js/wasi@0.x forgets to call `refreshMemory` in `clock_res_get`,
+            // which writes its result to memory view. Without the refresh the memory view,
+            // it accesses a detached array buffer if the memory is grown by malloc.
+            // But they wasmer team discarded the 0.x codebase at all and replaced it with
+            // a new implementation written in Rust. The new version 1.x is really unstable
+            // and not production-ready as far as katei investigated in Apr 2022.
+            // So override the broken implementation of `clock_res_get` here instead of
+            // fixing the wasi polyfill.
+            // Reference: https://github.com/wasmerio/wasmer-js/blob/55fa8c17c56348c312a8bd23c69054b1aa633891/packages/wasi/src/index.ts#L557
+            const original_clock_res_get = wasiObject.wasiImport["clock_res_get"];
+            wasiObject.wasiImport["clock_res_get"] = (clockId, resolution) => {
+                wasiObject.refreshMemory();
+                return original_clock_res_get(clockId, resolution)
+            };
+            wasiObject.wasiImport["fd_fdstat_set_flags"] = (fd, flags) => {
+                return 0;
+            };
+            return wasiObject.wasiImport;
+        }
+
         const imports = {
-            wasi_snapshot_preview1: wasi.wasiImport,
+            wasi_snapshot_preview1: wrapWASI(wasi),
         }
         vm.addToImports(imports)
         const { instance } = await WebAssembly.instantiate(buffer, imports);
@@ -141,7 +178,6 @@ export class IRB {
             require "rubygems/commands/install_command"
             class Gem::Request
                 def perform_request(request)
-                    puts "gem install #{request}"
                     response, body_bytes = Fiber.yield(["Gem::Request#perform_request", [request, @uri]])
                     if body_bytes.is_a?(Array)
                         body_str = body_bytes.pack("C*")
@@ -150,7 +186,6 @@ export class IRB {
                     end
                     body_str = Net::BufferedIO.new(StringIO.new(body_str))
 
-                    puts response
                     status = response["status"].inspect
                     response_class = Net::HTTPResponse::CODE_TO_OBJ[status]
                     response = response_class.new("2.0", status.to_i, nil)
@@ -191,6 +226,21 @@ export class IRB {
                 end
             end
 
+            class Thread
+                def self.new(&block)
+                    f = Fiber.new(&block)
+                    def f.value = resume
+                    f
+                end
+            end
+
+            def File.chmod(mode, *paths) = nil
+            class File
+                def chmod(mode) = nil
+            end
+
+            Gem.configuration.concurrent_downloads = 1
+
             Fiber.new {
                 IRB.setup(ap_path)
 
@@ -216,7 +266,8 @@ export class IRB {
                     headers: RbToJs.Hash(this.vm, request.call("each").call("to_h")),
                 })
                 let body: RbValue;
-                if (uri.endsWith(".rz")) {
+                // FIXME: handle encoding things on Ruby side
+                if (uri.endsWith(".rz") || uri.endsWith(".gem")) {
                     const bodyBuffer = await response.arrayBuffer();
                     body = JsToRb.Array(this.vm, new Uint8Array(bodyBuffer));
                 } else {
