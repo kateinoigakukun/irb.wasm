@@ -80,7 +80,7 @@ export class IRB {
         };
 
         const args = [
-            "irb.wasm", "-e_=0", "-I/gems/lib", "-I/gems/io-console-1.0.0/lib"
+            "irb.wasm", "-e_=0", "-I/gems/lib"
         ];
 
         termWriter("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
@@ -242,6 +242,13 @@ export class IRB {
             Gem.configuration.concurrent_downloads = 1
 
             Fiber.new {
+                def self.gem(name, version = nil)
+                    install = Gem::Commands::InstallCommand.new
+                    # To avoid writing to read-only VFS
+                    install.options[:install_dir] = Gem.user_dir
+                    install.install_gem(name, version)
+                end
+
                 IRB.setup(ap_path)
 
                 irb = IRB::Irb.new(nil, IRB::StdioInputMethod.new)
