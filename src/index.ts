@@ -1,10 +1,10 @@
 import * as Comlink from "comlink"
-import { StdinProducer } from "./sync-stdin";
 import jQuery from "jquery"
 // @ts-ignore
 import initTerminalPlugin from "jquery.terminal";
 import initUnixFormatting from "jquery.terminal/js/unix_formatting"
 import "jquery.terminal/css/jquery.terminal.css"
+import { IRB } from "./irb-worker";
 
 initTerminalPlugin(jQuery)
 initUnixFormatting(window, jQuery)
@@ -16,29 +16,12 @@ function checkAvailability() {
     }
 }
 
-interface IrbWorker {
-    init(
-        termWriter: (_: string) => void,
-        requestStdinByte: () => void,
-        stdinBuffer: SharedArrayBuffer
-    ): void;
-    start(): void;
-}
-
 async function init() {
     checkAvailability()
-    const irbWorker: Comlink.Remote<IrbWorker> = Comlink.wrap(
-        // @ts-ignore
-        new Worker(new URL("irb-worker.ts", import.meta.url), {
-            type: "module"
-        })
-    );
-
-    const stdinConnection = new SharedArrayBuffer(16);
-    const stdinProducer = new StdinProducer(new Int32Array(stdinConnection));
+    const irbWorker = new IRB();
 
     const term = jQuery("#terminal").terminal((line) => {
-        stdinProducer.writeLine(Array.from(line + "\n"))
+        irbWorker.writeLine(line + "\n");
     }, {
         greetings: null,
         prompt: "",
@@ -50,13 +33,9 @@ async function init() {
     window.term = term;
 
     await irbWorker.init(
-        /* termWriter: */ Comlink.proxy((text) => {
-        term.echo(text, { newline: false })
-    }),
-        /* requestStdinByte: */ Comlink.proxy(() => {
-        stdinProducer.onNewRequest();
-    }),
-        stdinConnection
+        /* termWriter: */(text) => {
+            term.echo(text, { newline: false })
+        },
     )
 
     irbWorker.start();
