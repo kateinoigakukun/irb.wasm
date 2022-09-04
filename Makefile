@@ -1,4 +1,4 @@
-RUBY_CHANNEL = head-wasm32-unknown-wasi-full-js
+RUBY_CHANNEL = head-wasm32-unknown-wasi-full-js-irb
 RUBY_SNAPSHOT = 2022-09-03-a
 RUBY_ROOT = rubies/$(RUBY_CHANNEL)
 

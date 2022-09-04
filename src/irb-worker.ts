@@ -40,7 +40,8 @@ export class IRB {
         const wasi = new WASI({
             args,
             env: {
-                "GEM_PATH": "/gems"
+                "GEM_PATH": "/gems",
+                "RUBY_FIBER_MACHINE_STACK_SIZE": String(1024 * 1024 * 10),
             },
             bindings: {
                 ...WASI.defaultBindings,
