@@ -272,15 +272,19 @@ export class IRB {
         if (kind === "Gem::Request#perform_request") {
             const args = task.call("at", this.vm.eval("1"));
             const request = args.call("at", this.vm.eval("0"));
-            const uri = args.call("at", this.vm.eval("1")).toString();
+            const uri = new URL(args.call("at", this.vm.eval("1")).toString());
             const handle = async () => {
+                console.log(uri.hostname)
+                if (uri.hostname === "index.rubygems.org") {
+                    uri.hostname = "irb-wasm-proxy.edgecompute.app"
+                }
                 const response = await fetch(uri, {
                     method: request.call("method").toString(),
                     headers: RbToJs.Hash(this.vm, request.call("each").call("to_h")),
                 })
                 let body: RbValue;
                 // FIXME: handle encoding things on Ruby side
-                if (uri.endsWith(".rz") || uri.endsWith(".gem")) {
+                if (uri.toString().endsWith(".rz") || uri.toString().endsWith(".gem")) {
                     const bodyBuffer = await response.arrayBuffer();
                     body = JsToRb.Array(this.vm, new Uint8Array(bodyBuffer));
                 } else {
