@@ -1,0 +1,1 @@
+A http proxy for index.rubygems.org

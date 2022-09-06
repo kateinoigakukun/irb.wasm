@@ -1,0 +1,31 @@
+{
+    "author": "oss@fastly.com",
+    "bugs": {
+        "url": "https://github.com/fastly/compute-starter-kit-js-proto/issues"
+    },
+    "dependencies": {
+        "@fastly/js-compute": "^0.5.1"
+    },
+    "devDependencies": {
+        "core-js": "^3.19.1",
+        "webpack": "^5.64.0",
+        "webpack-cli": "^4.9.1"
+    },
+    "engines": {
+        "node": "^16"
+    },
+    "homepage": "https://developer.fastly.com/solutions/starters/compute-starter-kit-javascript-default",
+    "license": "MIT",
+    "main": "src/index.js",
+    "name": "rubygems-proxy",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/fastly/compute-starter-kit-js-proto.git"
+    },
+    "scripts": {
+        "build": "js-compute-runtime bin/index.js bin/main.wasm",
+        "deploy": "npm run build \u0026\u0026 fastly compute deploy",
+        "prebuild": "webpack"
+    },
+    "version": "0.3.0"
+}

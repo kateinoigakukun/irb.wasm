@@ -1,0 +1,14 @@
+# This file describes a Fastly Compute@Edge package. To learn more visit:
+# https://developer.fastly.com/reference/fastly-toml/
+
+authors = [""]
+description = "A basic starter kit that demonstrates routing, simple synthetic responses and overriding caching rules."
+language = "javascript"
+manifest_version = 2
+name = "rubygems-proxy"
+service_id = "6BRAWwOWF3pKVVtm0rFXtk"
+
+[local_server]
+  [local_server.backends]
+    [local_server.backends."index_rubygems_org"]
+      url = "https://index.rubygems.org"
