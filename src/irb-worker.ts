@@ -241,6 +241,12 @@ export class IRB {
 
             Gem.configuration.concurrent_downloads = 1
 
+            class Term
+                def self.echo(text)
+                    JS.global.call("termEchoRaw", text)
+                end
+            end
+
             Fiber.new {
                 def self.gem(name, version = nil)
                     install = Gem::Commands::InstallCommand.new

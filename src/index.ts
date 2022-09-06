@@ -31,6 +31,10 @@ async function init() {
     console.log("irbWorker", irbWorker)
     // @ts-ignore
     window.term = term;
+    // @ts-ignore
+    window.termEchoRaw = (str: string) => {
+        term.echo(str, {raw: true})
+    }
 
     await irbWorker.init(
         /* termWriter: */(text) => {

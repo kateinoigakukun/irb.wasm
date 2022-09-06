@@ -10,3 +10,7 @@ html, body {
     margin: 0;
     background-color: #000000;
 }
+
+.terminal img {
+    max-width: 100%;
+}
