@@ -15,7 +15,7 @@ async function handlePreflightRequest(event) {
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
+      "Access-Control-Allow-Headers": "*",
       "Access-Control-Max-Age": "86400"
     }
   });
