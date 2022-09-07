@@ -83,7 +83,16 @@ export class IRB {
             "irb.wasm", "-e_=0", "-I/gems/lib"
         ];
 
+        termWriter("$ #\r\n");
+        termWriter("$ # [[b;teal;black] irb.wasm - IRB on CRuby on WebAssembly ]\r\n");
+        termWriter("$ #\r\n");
         termWriter("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
+        termWriter("$ #\r\n");
+        termWriter("$ # QUICK START \r\n");
+        termWriter("$ #   1. Install gem by `gem \"haml\"` \r\n");
+        termWriter("$ #   2. `require \"haml\"` \r\n");
+        termWriter("$ #   3. `Term.echo Haml::Engine.new(\"%h1 Haml code!\").render` \r\n");
+        termWriter("$ #\r\n");
         termWriter("$ " + args.join(" ") + "\r\n");
         const vm = new RubyVM();
         wasmFs.fs.mkdirSync("/home/me", { mode: 0o777, recursive: true });
