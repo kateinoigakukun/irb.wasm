@@ -1,4 +1,3 @@
-import * as Comlink from "comlink"
 import jQuery from "jquery"
 // @ts-ignore
 import initTerminalPlugin from "jquery.terminal";
