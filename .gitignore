@@ -2,6 +2,7 @@
 /.parcel-cache
 /dist
 /rubies
+/build
 /static/irb.wasm
 !.gitkeep
 
