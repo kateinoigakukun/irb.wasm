@@ -29,6 +29,10 @@ build_task = RubyWasm::BuildTask.new(channel, **options) do |t|
   t.crossruby.wasmoptflags = "-O2"
 end
 
+task :cache_key do
+  puts build_task.hexdigest
+end
+
 wasi_vfs = build_task.wasi_vfs
 
 RUBY_ROOT = File.join("rubies", channel)
