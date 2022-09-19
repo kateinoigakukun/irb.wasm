@@ -33,6 +33,17 @@ jobs:
           name: irb.wasm
           path: static/irb.wasm
 
+  build-page:
+    runs-on: ubuntu-22.04
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+      - uses: actions/download-artifact@v2
+        with:
+          name: irb.wasm
+          path: static
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
