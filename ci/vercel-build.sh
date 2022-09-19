@@ -5,7 +5,8 @@ REPO_ROOT="$(cd "$(dirname $0)"/.. && pwd)"
 
 cd "$REPO_ROOT"
 
-yum install ruby bison make autoconf git curl build-essential libyaml-dev zlib1g-dev -y
+yum groupinstall "Development Tools" -y
+yum install ruby bison make autoconf git curl libyaml-devel zlib-devel -y
 
 rake static/irb.wasm
 npx parcel build ./src/index.html
