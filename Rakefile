@@ -38,7 +38,10 @@ wasi_vfs = build_task.wasi_vfs
 RUBY_ROOT = File.join("rubies", channel)
 
 desc "Build irb.wasm"
-file "static/irb.wasm" => [channel, wasi_vfs.cli_install_task] do
+file "static/irb.wasm" => [wasi_vfs.cli_install_task] do
+  unless File.exist?(RUBY_ROOT)
+    Rake::Task[channel].invoke
+  end
   require "tmpdir"
   Dir.mktmpdir do |dir|
     tmpruby = File.join(dir, "ruby")
