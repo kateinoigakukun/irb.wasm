@@ -8,15 +8,7 @@ import { IRB } from "./irb-worker";
 initTerminalPlugin(jQuery)
 initUnixFormatting(window, jQuery)
 
-function checkAvailability() {
-    if (typeof SharedArrayBuffer == "undefined") {
-        alert("Your browser doesn't support SharedArrayBuffer now. Please use the latest Chrome.")
-        throw new Error("no SharedArrayBuffer");
-    }
-}
-
 async function init() {
-    checkAvailability()
     const irbWorker = new IRB();
 
     const term = jQuery("#terminal").terminal((line) => {
