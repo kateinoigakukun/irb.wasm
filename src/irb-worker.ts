@@ -54,6 +54,7 @@ class ResumptionQueue {
 export class IRB {
     private instance: WebAssembly.Instance | null;
     private wasi: any;
+    private wasmFs: WasmFs;
     private vm: RubyVM;
     private irbFiber: RbValue | null;
     private queue: ResumptionQueue | null;
@@ -64,6 +65,7 @@ export class IRB {
         const buffer = await response.arrayBuffer();
 
         const wasmFs = new WasmFs();
+        this.wasmFs = wasmFs;
 
         const textDecoder = new TextDecoder("utf-8");
         const originalWriteSync = wasmFs.fs.writeSync;
@@ -104,7 +106,7 @@ export class IRB {
             env: {
                 "GEM_PATH": "/gems:/home/me/.gem/ruby/3.2.0+2",
                 "GEM_SPEC_CACHE": "/home/me/.gem/specs",
-                "RUBY_FIBER_MACHINE_STACK_SIZE": String(1024 * 1024 * 20),
+                "RUBY_FIBER_MACHINE_STACK_SIZE": String(1024 * 1024 * 25),
             },
             preopens: {
                 "/home": "/home",
@@ -179,6 +181,8 @@ export class IRB {
 
             def Dir.home = "/home/me"
             def Gem.user_home = Dir.home
+            # HACK: Install gems under writable directory by default
+            def Gem.dir = Gem.user_dir
 
             class Socket
                 class << self
@@ -216,6 +220,58 @@ export class IRB {
             class Gem::Specification
                 # HACK: supress missing extension warning, which prevents "require" to work
                 def missing_extensions? = false
+            end
+
+            require "bundler"
+            class Bundler::ProcessLock
+                def self.lock(*)
+                    # HACK: no flock on browser...
+                    yield
+                end
+            end
+
+            # HACK: trick bundler to think that we are supporting https
+            module OpenSSL
+                module SSL
+                    VERIFY_PEER = 0
+                    class SSLError < StandardError; end
+                end
+            end
+
+            class FetchConnection
+                def initialize
+                    @headers = {}
+                    @headers["User-Agent"] = "Bundler/RubyGems on irb.wasm"
+                end
+                def request(uri, request)
+                    response, body_bytes = Fiber.yield(["Gem::Request#perform_request", [request, uri]])
+                    if body_bytes.is_a?(Array)
+                        body_str = body_bytes.pack("C*")
+                    else
+                        body_str = body_bytes.inspect
+                    end
+                    body_str = Net::BufferedIO.new(StringIO.new(body_str))
+
+                    status = response["status"].inspect
+                    response_class = Net::HTTPResponse::CODE_TO_OBJ[status]
+                    response = response_class.new("2.0", status.to_i, nil)
+
+                    response.reading_body(body_str, true) {}
+
+                    response
+                end
+            end
+            class Bundler::Fetcher
+                def connection
+                    @connection ||= begin
+                        con = FetchConnection.new
+                    end
+                end
+            end
+
+            # HACK: OpenSSL::Digest is not available
+            module Bundler::SharedHelpers
+                def md5_available? = false
             end
 
             class NonBlockingIO
@@ -306,7 +362,8 @@ export class IRB {
                 })
                 let body: RbValue;
                 // FIXME: handle encoding things on Ruby side
-                if (uri.toString().endsWith(".rz") || uri.toString().endsWith(".gem")) {
+                const octetStream = response.headers.get("Content-Type")?.startsWith("application/octet-stream")
+                if (uri.toString().endsWith(".rz") || uri.toString().endsWith(".gem") || octetStream) {
                     const bodyBuffer = await response.arrayBuffer();
                     body = JsToRb.Array(this.vm, new Uint8Array(bodyBuffer));
                 } else {
