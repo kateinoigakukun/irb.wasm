@@ -208,6 +208,16 @@ export class IRB {
                 end
             end
 
+            class Gem::Installer
+                def build_extensions
+                    # HACK: skip ext build for now...
+                end
+            end
+            class Gem::Specification
+                # HACK: supress missing extension warning, which prevents "require" to work
+                def missing_extensions? = false
+            end
+
             class NonBlockingIO
                 def gets
                     Fiber.yield(["NonBlockingIO#gets"]).inspect
