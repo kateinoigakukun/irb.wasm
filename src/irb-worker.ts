@@ -57,6 +57,7 @@ export class IRB {
     private vm: RubyVM;
     private irbFiber: RbValue | null;
     private queue: ResumptionQueue | null;
+    private isTracingSyscall = false;
 
     async init(termWriter) {
         const response = await fetch("./irb.wasm");
@@ -117,15 +118,17 @@ export class IRB {
         });
 
         const wrapWASI = (wasiObject) => {
-            for (const key in wasiObject.wasiImport) {
-                const func = wasiObject.wasiImport[key]
-                wasiObject.wasiImport[key] = function () {
-                    // console.log(`[tracing] WASI.${key}`);
-                    const ret = Reflect.apply(func, undefined, arguments);
-                    if (ret !== 0) {
-                        console.warn(`[tracing] WASI.${key} returned ${ret}`);
+            if (this.isTracingSyscall) {
+                for (const key in wasiObject.wasiImport) {
+                    const func = wasiObject.wasiImport[key]
+                    wasiObject.wasiImport[key] = function () {
+                        // console.log(`[tracing] WASI.${key}`);
+                        const ret = Reflect.apply(func, undefined, arguments);
+                        if (ret !== 0) {
+                            console.warn(`[tracing] WASI.${key} returned ${ret}`);
+                        }
+                        return ret
                     }
-                    return ret
                 }
             }
             // PATCH: @wasmer-js/wasi@0.x forgets to call `refreshMemory` in `clock_res_get`,
