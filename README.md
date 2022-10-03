@@ -9,14 +9,10 @@ Demo: https://irb-wasm.vercel.app/
 <img src=./docs/demo.png width="400px">
 </div>
 
-## Dependencies
-
-- [wasi-vfs](https://github.com/kateinoigakukun/wasi-vfs/): Only CLI tool is required
-
 ## Development
 
 ```console
-$ make static/irb.wasm
+$ rake static/irb.wasm
 $ npm install
 $ npx parcel ./src/index.html
 ```
