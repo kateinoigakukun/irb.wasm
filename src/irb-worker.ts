@@ -92,9 +92,9 @@ export class IRB {
         termWriter("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
         termWriter("$ #\r\n");
         termWriter("$ # QUICK START \r\n");
-        termWriter("$ #   1. Install gem by `gem \"haml\", \"5.2.1\"` \r\n");
+        termWriter("$ #   1. Install gem by `gem \"haml\" \r\n");
         termWriter("$ #   2. `require \"haml\"` \r\n");
-        termWriter("$ #   3. `Term.echo Haml::Engine.new(\"%h1 Haml code!\").render` \r\n");
+        termWriter("$ #   3. `Term.echo Haml::Template.new { \"%h1 Haml code!\" }.render` \r\n");
         termWriter("$ #\r\n");
         termWriter("$ " + args.join(" ") + "\r\n");
         const vm = new RubyVM();
