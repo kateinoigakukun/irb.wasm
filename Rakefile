@@ -15,7 +15,6 @@ options = {
   target: "wasm32-unknown-wasi",
   src: { name: "head", type: "github", repo: "ruby/ruby", rev: "master", patches: [] },
   default_exts: FULL_EXTS,
-  debug: true,
   build_dir: BUILD_DIR,
 }
 
@@ -26,7 +25,16 @@ build_task = RubyWasm::BuildTask.new(channel, **options) do |t|
     RubyWasm::CrossRubyExtProduct.new(File.join(LIB_ROOT, "ext", "js"), t.toolchain),
     RubyWasm::CrossRubyExtProduct.new(File.join(LIB_ROOT, "ext", "witapi"), t.toolchain),
   ]
-  t.crossruby.wasmoptflags = "-O2"
+  t.crossruby.debugflags = %w[-g0]
+  t.crossruby.wasmoptflags = %w[-O3]
+  t.crossruby.ldflags = %w[
+    -Xlinker
+    --stack-first
+    -Xlinker
+    -z
+    -Xlinker
+    stack-size=16777216
+  ]
 end
 
 task :cache_key do
