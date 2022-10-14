@@ -106,7 +106,7 @@ export class IRB {
             env: {
                 "GEM_PATH": "/gems:/home/me/.gem/ruby/3.2.0+2",
                 "GEM_SPEC_CACHE": "/home/me/.gem/specs",
-                "RUBY_FIBER_MACHINE_STACK_SIZE": String(1024 * 1024 * 23),
+                "RUBY_FIBER_MACHINE_STACK_SIZE": String(1024 * 1024 * 20),
             },
             preopens: {
                 "/home": "/home",
