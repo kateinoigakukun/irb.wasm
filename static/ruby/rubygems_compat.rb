@@ -1,8 +1,8 @@
 require "rubygems/commands/install_command"
 
 class Gem::Request
-  def perform_request(request)
-    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(@uri))
+  def self.request(uri, request)
+    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(uri))
     results = promise.await
     response, body_bytes = results[:response], results[:body]
     if JS.is_a?(body_bytes, JS.global[:Uint8Array])
@@ -20,6 +20,8 @@ class Gem::Request
 
     response
   end
+
+  def perform_request(request) = Gem::Request.request(@uri, request)
 end
 
 class Gem::Installer
