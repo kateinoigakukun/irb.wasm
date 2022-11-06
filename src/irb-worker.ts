@@ -231,7 +231,7 @@ export class IRB {
                     @headers["User-Agent"] = "Bundler/RubyGems on irb.wasm"
                 end
                 def request(uri, request)
-                    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(@uri))
+                    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(uri))
                     results = promise.await
                     response, body_bytes = results[:response], results[:body]
                     if JS.is_a?(body_bytes, JS.global[:Uint8Array])
@@ -331,7 +331,7 @@ export class IRB {
     async gemRequestPerformRequest(request: RbValue, uri: RbValue) {
         const url = new URL(uri.toString());
         console.log(url.hostname)
-        if (url.hostname === "index.rubygems.org") {
+        if (url.hostname === "index.rubygems.org" || url.hostname === "rubygems.org") {
             url.hostname = "irb-wasm-proxy.edgecompute.app"
         }
         const response = await fetch(url, {
