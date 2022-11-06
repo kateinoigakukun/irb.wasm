@@ -3,51 +3,27 @@ import { WasmFs } from "@wasmer/wasmfs";
 import * as path from "path-browserify";
 import { RbValue, RubyVM } from "ruby-head-wasm-wasi"
 
-type IOTask = {
-    kind: string;
-    state: "running" | "done";
-    value1: any | null;
-    value2: RbValue | null;
-}
+class LineBuffer {
+    private resolve: ((value: string) => void) | null = null;
+    private buffer: string[] = [];
 
-class ResumptionQueue {
-    private tasks: IOTask[] = [];
-
-    constructor(readonly fiber: RbValue, readonly vm: RubyVM) { }
-
-    schedule(kind: string) {
-        this.tasks.push({ kind, state: "running", value1: null, value2: null });
+    writeLine(line: string) {
+        if (this.resolve) {
+            const rslv = this.resolve;
+            this.resolve = null;
+            rslv(line);
+        } else {
+            this.buffer.push(line);
+        }
     }
 
-    finish(kind: string, value1: any, value2: RbValue | null = null) {
-        let oldestTask: IOTask | null = null;
-        for (let i = 0; i < this.tasks.length; i++) {
-            const task = this.tasks[i];
-            if (task.state === "running" && task.kind === kind) {
-                oldestTask = task;
-                break;
-            }
+    async readLine(): Promise<string> {
+        if (this.buffer.length > 0) {
+            return this.buffer.shift()!;
         }
-        if (!oldestTask) {
-            console.warn(`No running task of kind ${kind} found`);
-            return;
-        }
-        oldestTask.state = "done";
-        oldestTask.value1 = value1;
-        oldestTask.value2 = value2;
-        return this.resumeIfPossible(this.fiber, this.vm);
-    }
-
-    private resumeIfPossible(fiber: RbValue, vm: RubyVM): RbValue | null {
-        let oldestTask = this.tasks.shift();
-        if (oldestTask && oldestTask.state === "done") {
-            if (oldestTask.value2) {
-                return fiber.call("resume", vm.wrap(oldestTask.value1), oldestTask.value2);
-            } else {
-                return fiber.call("resume", vm.wrap(oldestTask.value1));
-            }
-        }
-        return null;
+        return new Promise((resolve) => {
+            this.resolve = resolve;
+        });
     }
 }
 
@@ -56,9 +32,8 @@ export class IRB {
     private wasi: any;
     private wasmFs: WasmFs;
     private vm: RubyVM;
-    private irbFiber: RbValue | null;
-    private queue: ResumptionQueue | null;
     private isTracingSyscall = false;
+    private lineBuffer = new LineBuffer();
 
     async init(termWriter) {
         const response = await fetch("./irb.wasm");
@@ -170,7 +145,7 @@ export class IRB {
     }
 
     start() {
-        this.irbFiber = this.vm.eval(`
+        this.vm.evalAsync(`
             require "irb"
             require "stringio"
             require "js"
@@ -191,12 +166,24 @@ export class IRB {
             end
             class SocketError; end
 
+            class JS::Object
+                def to_a
+                    ary = []
+                    self[:length].to_i.times do |i|
+                        ary << self.call(:at, i).to_i
+                    end
+                    ary
+                end
+            end
+
             require "rubygems/commands/install_command"
             class Gem::Request
                 def perform_request(request)
-                    response, body_bytes = Fiber.yield(["Gem::Request#perform_request", [request, @uri]])
-                    if body_bytes.is_a?(Array)
-                        body_str = body_bytes.pack("C*")
+                    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(@uri))
+                    results = promise.await
+                    response, body_bytes = results[:response], results[:body]
+                    if JS.is_a?(body_bytes, JS.global[:Uint8Array])
+                        body_str = body_bytes.to_a.pack("C*")
                     else
                         body_str = body_bytes.inspect
                     end
@@ -244,9 +231,11 @@ export class IRB {
                     @headers["User-Agent"] = "Bundler/RubyGems on irb.wasm"
                 end
                 def request(uri, request)
-                    response, body_bytes = Fiber.yield(["Gem::Request#perform_request", [request, uri]])
-                    if body_bytes.is_a?(Array)
-                        body_str = body_bytes.pack("C*")
+                    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(@uri))
+                    results = promise.await
+                    response, body_bytes = results[:response], results[:body]
+                    if JS.is_a?(body_bytes, JS.global[:Uint8Array])
+                        body_str = body_bytes.to_a.pack("C*")
                     else
                         body_str = body_bytes.inspect
                     end
@@ -276,7 +265,7 @@ export class IRB {
 
             class NonBlockingIO
                 def gets
-                    Fiber.yield(["NonBlockingIO#gets"]).inspect
+                    JS.global[:irbWorker][:lineBuffer].readLine.await.to_s
                 end
 
                 def external_encoding
@@ -325,67 +314,44 @@ export class IRB {
                 end
             end
 
-            Fiber.new {
-                def self.gem(name, version = nil)
-                    install = Gem::Commands::InstallCommand.new
-                    # To avoid writing to read-only VFS
-                    install.options[:install_dir] = Gem.user_dir
-                    install.install_gem(name, version)
-                end
+            def self.gem(name, version = nil)
+                install = Gem::Commands::InstallCommand.new
+                # To avoid writing to read-only VFS
+                install.options[:install_dir] = Gem.user_dir
+                install.install_gem(name, version)
+            end
 
-                IRB.setup(ap_path)
+            IRB.setup(ap_path)
 
-                irb = IRB::Irb.new(nil, IRB::StdioInputMethod.new)
-                irb.run(IRB.conf)
-            }
+            irb = IRB::Irb.new(nil, IRB::StdioInputMethod.new)
+            irb.run(IRB.conf)
         `)
-        this.queue = new ResumptionQueue(this.irbFiber, this.vm);
-        const reply = this.irbFiber.call("resume")
-        this.handleIOTask(reply)
     }
 
-    handleIOTask(task: RbValue) {
-        const kind = task.call("at", this.vm.eval("0")).toJS();
-        this.queue?.schedule(kind);
-        if (kind === "Gem::Request#perform_request") {
-            const args = task.call("at", this.vm.eval("1"));
-            const request = args.call("at", this.vm.eval("0"));
-            const uri = new URL(args.call("at", this.vm.eval("1")).toString());
-            const handle = async () => {
-                console.log(uri.hostname)
-                if (uri.hostname === "index.rubygems.org") {
-                    uri.hostname = "irb-wasm-proxy.edgecompute.app"
-                }
-                const response = await fetch(uri, {
-                    method: request.call("method").toString(),
-                    headers: RbToJs.Hash(this.vm, request.call("each").call("to_h")),
-                })
-                let body: RbValue;
-                // FIXME: handle encoding things on Ruby side
-                const octetStream = response.headers.get("Content-Type")?.startsWith("application/octet-stream")
-                if (uri.toString().endsWith(".rz") || uri.toString().endsWith(".gem") || octetStream) {
-                    const bodyBuffer = await response.arrayBuffer();
-                    body = JsToRb.Array(this.vm, new Uint8Array(bodyBuffer));
-                } else {
-                    body = this.vm.wrap(await response.text());
-                }
-                const newTask = this.queue?.finish("Gem::Request#perform_request", response, body);
-                if (newTask) {
-                    this.handleIOTask(newTask);
-                }
-            }
-            handle();
-        } else if (kind === "NonBlockingIO#gets") {
-        } else {
-            throw new Error("unknown IO task: " + kind);
+    async gemRequestPerformRequest(request: RbValue, uri: RbValue) {
+        const url = new URL(uri.toString());
+        console.log(url.hostname)
+        if (url.hostname === "index.rubygems.org") {
+            url.hostname = "irb-wasm-proxy.edgecompute.app"
         }
+        const response = await fetch(url, {
+            method: request.call("method").toString(),
+            headers: RbToJs.Hash(this.vm, request.call("each").call("to_h")),
+        })
+        let body: any;
+        // FIXME: handle encoding things on Ruby side
+        const octetStream = response.headers.get("Content-Type")?.startsWith("application/octet-stream")
+        if (url.toString().endsWith(".rz") || url.toString().endsWith(".gem") || octetStream) {
+            const bodyBuffer = await response.arrayBuffer();
+            body = new Uint8Array(bodyBuffer);
+        } else {
+            body = await response.text();
+        }
+        return { response, body };
     }
 
     writeLine(line: string) {
-        const newTask = this.queue?.finish("NonBlockingIO#gets", line);
-        if (newTask) {
-            this.handleIOTask(newTask);
-        }
+        this.lineBuffer.writeLine(line);
     }
 }
 
@@ -408,14 +374,4 @@ const RbToJs = {
         }
         return dict;
     }
-}
-
-const JsToRb = {
-    Array: (vm: RubyVM, value: Uint8Array): RbValue => {
-        const array = vm.eval("Array.new");
-        for (const item of value) {
-            array.call("push", vm.eval(String(item)));
-        }
-        return array;
-    },
 }
