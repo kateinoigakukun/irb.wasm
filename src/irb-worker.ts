@@ -154,17 +154,15 @@ export class IRB {
             STDOUT.sync = true
             $0 = File::basename(ap_path, ".rb") if ap_path
 
-            def Dir.home = "/home/me"
-            def Gem.user_home = Dir.home
-            # HACK: Install gems under writable directory by default
-            def Gem.dir = Gem.user_dir
-
-            class Socket
-                class << self
-                    def method_missing(sym, *) = nil
-                end
+            def require_remote(path)
+                response = JS.global.fetch(path).await
+                text = response.text.await
+                Kernel.eval(text.to_s, TOPLEVEL_BINDING, path)
             end
-            class SocketError; end
+
+            require_remote "./ruby/stdlib_compat.rb"
+            require_remote "./ruby/rubygems_compat.rb"
+            require_remote "./ruby/bundler_compat.rb"
 
             class JS::Object
                 def to_a
@@ -175,138 +173,6 @@ export class IRB {
                     ary
                 end
             end
-
-            require "rubygems/commands/install_command"
-            class Gem::Request
-                def perform_request(request)
-                    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(@uri))
-                    results = promise.await
-                    response, body_bytes = results[:response], results[:body]
-                    if JS.is_a?(body_bytes, JS.global[:Uint8Array])
-                        body_str = body_bytes.to_a.pack("C*")
-                    else
-                        body_str = body_bytes.inspect
-                    end
-                    body_str = Net::BufferedIO.new(StringIO.new(body_str))
-
-                    status = response["status"].inspect
-                    response_class = Net::HTTPResponse::CODE_TO_OBJ[status]
-                    response = response_class.new("2.0", status.to_i, nil)
-
-                    response.reading_body(body_str, true) {}
-
-                    response
-                end
-            end
-
-            class Gem::Installer
-                def build_extensions
-                    # HACK: skip ext build for now...
-                end
-            end
-            class Gem::Specification
-                # HACK: supress missing extension warning, which prevents "require" to work
-                def missing_extensions? = false
-            end
-
-            require "bundler"
-            class Bundler::ProcessLock
-                def self.lock(*)
-                    # HACK: no flock on browser...
-                    yield
-                end
-            end
-
-            # HACK: trick bundler to think that we are supporting https
-            module OpenSSL
-                module SSL
-                    VERIFY_PEER = 0
-                    class SSLError < StandardError; end
-                end
-            end
-
-            class FetchConnection
-                def initialize
-                    @headers = {}
-                    @headers["User-Agent"] = "Bundler/RubyGems on irb.wasm"
-                end
-                def request(uri, request)
-                    promise = JS.global[:irbWorker].call(:gemRequestPerformRequest, JS::Object.wrap(request), JS::Object.wrap(uri))
-                    results = promise.await
-                    response, body_bytes = results[:response], results[:body]
-                    if JS.is_a?(body_bytes, JS.global[:Uint8Array])
-                        body_str = body_bytes.to_a.pack("C*")
-                    else
-                        body_str = body_bytes.inspect
-                    end
-                    body_str = Net::BufferedIO.new(StringIO.new(body_str))
-
-                    status = response["status"].inspect
-                    response_class = Net::HTTPResponse::CODE_TO_OBJ[status]
-                    response = response_class.new("2.0", status.to_i, nil)
-
-                    response.reading_body(body_str, true) {}
-
-                    response
-                end
-            end
-            class Bundler::Fetcher
-                def connection
-                    @connection ||= begin
-                        con = FetchConnection.new
-                    end
-                end
-            end
-
-            # HACK: OpenSSL::Digest is not available
-            module Bundler::SharedHelpers
-                def md5_available? = false
-            end
-
-            class NonBlockingIO
-                def gets
-                    JS.global[:irbWorker][:lineBuffer].readLine.await.to_s
-                end
-
-                def external_encoding
-                    "US-ASCII"
-                end
-
-                def wait_readable(timeout = nil)
-                    true
-                end
-
-                def getc = "x"
-                def ungetc(c) = nil
-            end
-
-            class IO
-                class << self
-                    alias_method :original_open, :open
-                    def fake_open(fd, ...)
-                        if fd == 0
-                            return NonBlockingIO.new
-                        end
-                        original_open(fd, ...)
-                    end
-                    alias_method :open, :fake_open
-                end
-            end
-
-            class Thread
-                def self.new(&block)
-                    f = Fiber.new(&block)
-                    def f.value = resume
-                    f
-                end
-            end
-
-            def File.chmod(mode, *paths) = nil
-            class File
-                def chmod(mode) = nil
-            end
-
-            Gem.configuration.concurrent_downloads = 1
 
             class Term
                 def self.echo(text)
