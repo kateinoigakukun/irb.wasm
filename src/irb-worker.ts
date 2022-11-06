@@ -1,7 +1,7 @@
 import { WASI } from "@wasmer/wasi";
 import { WasmFs } from "@wasmer/wasmfs";
 import * as path from "path-browserify";
-import { RbValue, RubyVM } from "ruby-head-wasm-wasi"
+import { RubyVM } from "ruby-head-wasm-wasi"
 import stdlib_compat from "url:./ruby/stdlib_compat.rb";
 import rubygems_compat from "url:./ruby/rubygems_compat.rb";
 import bundler_compat from "url:./ruby/bundler_compat.rb";
