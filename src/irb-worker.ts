@@ -2,6 +2,9 @@ import { WASI } from "@wasmer/wasi";
 import { WasmFs } from "@wasmer/wasmfs";
 import * as path from "path-browserify";
 import { RbValue, RubyVM } from "ruby-head-wasm-wasi"
+import stdlib_compat from "url:./ruby/stdlib_compat.rb";
+import rubygems_compat from "url:./ruby/rubygems_compat.rb";
+import bundler_compat from "url:./ruby/bundler_compat.rb";
 
 class LineBuffer {
     private resolve: ((value: string) => void) | null = null;
@@ -160,19 +163,9 @@ export class IRB {
                 Kernel.eval(text.to_s, TOPLEVEL_BINDING, path)
             end
 
-            require_remote "./ruby/stdlib_compat.rb"
-            require_remote "./ruby/rubygems_compat.rb"
-            require_remote "./ruby/bundler_compat.rb"
-
-            class JS::Object
-                def to_a
-                    ary = []
-                    self[:length].to_i.times do |i|
-                        ary << self.call(:at, i).to_i
-                    end
-                    ary
-                end
-            end
+            require_remote "${stdlib_compat}"
+            require_remote "${rubygems_compat}"
+            require_remote "${bundler_compat}"
 
             class Term
                 def self.echo(text)
@@ -194,50 +187,7 @@ export class IRB {
         `)
     }
 
-    async gemRequestPerformRequest(request: RbValue, uri: RbValue) {
-        const url = new URL(uri.toString());
-        console.log(url.hostname)
-        if (url.hostname === "index.rubygems.org" || url.hostname === "rubygems.org") {
-            url.hostname = "irb-wasm-proxy.edgecompute.app"
-        }
-        const response = await fetch(url, {
-            method: request.call("method").toString(),
-            headers: RbToJs.Hash(this.vm, request.call("each").call("to_h")),
-        })
-        let body: any;
-        // FIXME: handle encoding things on Ruby side
-        const octetStream = response.headers.get("Content-Type")?.startsWith("application/octet-stream")
-        if (url.toString().endsWith(".rz") || url.toString().endsWith(".gem") || octetStream) {
-            const bodyBuffer = await response.arrayBuffer();
-            body = new Uint8Array(bodyBuffer);
-        } else {
-            body = await response.text();
-        }
-        return { response, body };
-    }
-
     writeLine(line: string) {
         this.lineBuffer.writeLine(line);
-    }
-}
-
-const RbToJs = {
-    Array: (vm: RubyVM, value: RbValue) => {
-        const length = value.call("length").toJS();
-        const items: RbValue[] = [];
-        for (let i = 0; i < length; i++) {
-            const element = value.call("at", vm.eval(String(i)));
-            items.push(element);
-        }
-        return items;
-    },
-    Hash: (vm: RubyVM, value: RbValue) => {
-        const keys = RbToJs.Array(vm, value.call("keys"));
-        const dict = {};
-        for (const key of keys) {
-            const keyString = key.toString();
-            dict[keyString] = value.call("[]", key);
-        }
-        return dict;
     }
 }
