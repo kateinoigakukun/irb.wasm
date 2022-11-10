@@ -55,7 +55,6 @@ export class IRB {
                 break;
             }
             buffer.set(value, offset);
-            console.log(`offset = ${offset}, contentLength = ${contentLength}`)
             const progress = offset / contentLength;
             termWriter.set_prompt(`${title} ${Math.floor(progress * 100)}%`);
             offset += value.length;
