@@ -27,11 +27,10 @@ async function init() {
         term.echo(str, {raw: true})
     }
 
-    await irbWorker.init(
-        /* termWriter: */(text) => {
-            term.echo(text, { newline: false })
-        },
-    )
+    await irbWorker.init({
+        ...term,
+        echo: (line) => term.echo(line, { newline: false })
+    })
 
     irbWorker.start();
 }

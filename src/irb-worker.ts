@@ -30,6 +30,8 @@ class LineBuffer {
     }
 }
 
+type Term = { echo: (line: string) => void, set_prompt: (prompt: string) => void };
+
 export class IRB {
     private instance: WebAssembly.Instance | null;
     private wasi: any;
@@ -38,9 +40,32 @@ export class IRB {
     private isTracingSyscall = false;
     private lineBuffer = new LineBuffer();
 
-    async init(termWriter) {
-        const response = await fetch("./irb.wasm");
-        const buffer = await response.arrayBuffer();
+    async fetchWithProgress(url: string, title: string, termWriter: Term) {
+        const response = await fetch(url);
+        if (!response.ok || response.body === null) {
+            throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
+        }
+        const reader = response.body.getReader();
+        const contentLength = parseInt(response.headers.get("Content-Length") || "0", 10);
+        const buffer = new Uint8Array(contentLength);
+        let offset = 0;
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer.set(value, offset);
+            console.log(`offset = ${offset}, contentLength = ${contentLength}`)
+            const progress = offset / contentLength;
+            termWriter.set_prompt(`${title} ${Math.floor(progress * 100)}%`);
+            offset += value.length;
+        }
+        termWriter.set_prompt("");
+        return buffer;
+    }
+
+    async init(termWriter: Term) {
+        const buffer = await this.fetchWithProgress("./irb.wasm", "Downloading irb.wasm ", termWriter);
 
         const wasmFs = new WasmFs();
         this.wasmFs = wasmFs;
@@ -53,7 +78,7 @@ export class IRB {
                 case 1:
                 case 2: {
                     const text = textDecoder.decode(buffer);
-                    termWriter(text)
+                    termWriter.echo(text)
                     break;
                 }
             }
@@ -64,17 +89,17 @@ export class IRB {
             "irb.wasm", "-e_=0", "-I/gems/lib"
         ];
 
-        termWriter("$ #\r\n");
-        termWriter("$ # [[b;teal;black] irb.wasm - IRB on CRuby on WebAssembly ]\r\n");
-        termWriter("$ #\r\n");
-        termWriter("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
-        termWriter("$ #\r\n");
-        termWriter("$ # QUICK START \r\n");
-        termWriter("$ #   1. Install gem by `gem \"haml\" \r\n");
-        termWriter("$ #   2. `require \"haml\"` \r\n");
-        termWriter("$ #   3. `Term.echo Haml::Template.new { \"%h1 Haml code!\" }.render` \r\n");
-        termWriter("$ #\r\n");
-        termWriter("$ " + args.join(" ") + "\r\n");
+        termWriter.echo("$ #\r\n");
+        termWriter.echo("$ # [[b;teal;black] irb.wasm - IRB on CRuby on WebAssembly ]\r\n");
+        termWriter.echo("$ #\r\n");
+        termWriter.echo("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
+        termWriter.echo("$ #\r\n");
+        termWriter.echo("$ # QUICK START \r\n");
+        termWriter.echo("$ #   1. Install gem by `gem \"haml\" \r\n");
+        termWriter.echo("$ #   2. `require \"haml\"` \r\n");
+        termWriter.echo("$ #   3. `Term.echo Haml::Template.new { \"%h1 Haml code!\" }.render` \r\n");
+        termWriter.echo("$ #\r\n");
+        termWriter.echo("$ " + args.join(" ") + "\r\n");
         const vm = new RubyVM();
         wasmFs.fs.mkdirSync("/home/me", { mode: 0o777, recursive: true });
         wasmFs.fs.mkdirSync("/home/me/.gem/specs", { mode: 0o777, recursive: true });
