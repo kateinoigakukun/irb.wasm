@@ -72,7 +72,7 @@ export class IRB {
     }
 
     async init(termWriter: Term) {
-        const buffer = await this.fetchWithProgress("./irb.wasm", "Downloading irb.wasm ", termWriter);
+        const buffer = await this.fetchWithProgress("./irb.wasm", "Downloading irb.wasm", termWriter);
 
         const wasmFs = new WasmFs();
         this.wasmFs = wasmFs;
