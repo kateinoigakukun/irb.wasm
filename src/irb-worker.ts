@@ -40,27 +40,33 @@ export class IRB {
     private isTracingSyscall = false;
     private lineBuffer = new LineBuffer();
 
-    async fetchWithProgress(url: string, title: string, termWriter: Term) {
+    async fetchWithProgress(url: string, title: string, termWriter: Term): Promise<Uint8Array> {
         const response = await fetch(url);
         if (!response.ok || response.body === null) {
             throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
         }
         const reader = response.body.getReader();
-        const contentLength = parseInt(response.headers.get("Content-Length") || "0", 10);
-        const buffer = new Uint8Array(contentLength);
-        let offset = 0;
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) {
-                break;
+        const contentLengthField = response.headers.get("Content-Length");
+        if (contentLengthField !== null) {
+            const contentLength = parseInt(contentLengthField, 10);
+            const buffer = new Uint8Array(contentLength);
+            let offset = 0;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) {
+                    break;
+                }
+                buffer.set(value, offset);
+                const progress = offset / contentLength;
+                termWriter.set_prompt(`${title} ${Math.floor(progress * 100)}%`);
+                offset += value.length;
             }
-            buffer.set(value, offset);
-            const progress = offset / contentLength;
-            termWriter.set_prompt(`${title} ${Math.floor(progress * 100)}%`);
-            offset += value.length;
+            termWriter.set_prompt("");
+            return buffer;
+        } else {
+            const buffer = await response.arrayBuffer();
+            return new Uint8Array(buffer);
         }
-        termWriter.set_prompt("");
-        return buffer;
     }
 
     async init(termWriter: Term) {
