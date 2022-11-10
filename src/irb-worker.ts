@@ -45,9 +45,9 @@ export class IRB {
         if (!response.ok || response.body === null) {
             throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
         }
-        const reader = response.body.getReader();
         const contentLengthField = response.headers.get("Content-Length");
         if (contentLengthField !== null) {
+            const reader = response.body.getReader();
             const contentLength = parseInt(contentLengthField, 10);
             const buffer = new Uint8Array(contentLength);
             let offset = 0;
