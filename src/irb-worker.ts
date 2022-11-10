@@ -64,7 +64,9 @@ export class IRB {
             termWriter.set_prompt("");
             return buffer;
         } else {
+            termWriter.set_prompt(`${title} ...`);
             const buffer = await response.arrayBuffer();
+            termWriter.set_prompt("");
             return new Uint8Array(buffer);
         }
     }
