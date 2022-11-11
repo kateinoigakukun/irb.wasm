@@ -64,8 +64,13 @@ export class IRB {
             termWriter.set_prompt("");
             return buffer;
         } else {
-            termWriter.set_prompt(`${title} ...`);
+            let dots = 0;
+            const indicator = setInterval(() => {
+                termWriter.set_prompt(`${title} ${".".repeat(dots)}`);
+                dots = (dots + 1) % 4;
+            }, 200);
             const buffer = await response.arrayBuffer();
+            clearInterval(indicator);
             termWriter.set_prompt("");
             return new Uint8Array(buffer);
         }
