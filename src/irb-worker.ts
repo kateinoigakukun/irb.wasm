@@ -5,6 +5,7 @@ import { RubyVM } from "ruby-head-wasm-wasi"
 import stdlib_compat from "url:./ruby/stdlib_compat.rb";
 import rubygems_compat from "url:./ruby/rubygems_compat.rb";
 import bundler_compat from "url:./ruby/bundler_compat.rb";
+import irb_wasm from "url:../static/irb.wasm";
 
 class LineBuffer {
     private resolve: ((value: string) => void) | null = null;
@@ -77,7 +78,7 @@ export class IRB {
     }
 
     async init(termWriter: Term) {
-        const buffer = await this.fetchWithProgress("./irb.wasm", "Downloading irb.wasm", termWriter);
+        const buffer = await this.fetchWithProgress(irb_wasm, "Downloading irb.wasm", termWriter);
 
         const wasmFs = new WasmFs();
         this.wasmFs = wasmFs;
