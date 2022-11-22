@@ -21,3 +21,4 @@ $ npx parcel ./src/index.html
 
 If you need to re-build Ruby itself (when you made a change to Ruby), clean `rubies` and `build` directories by `rake clean`, then re-execute `rake static/irb.wasm`
 
+If you just made a change to `fake-gems`, you only need to remove `static/irb.wasm` and re-execute `rake static/irb.wasm` to avoid rebuilding everything.
