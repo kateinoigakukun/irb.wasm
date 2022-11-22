@@ -17,3 +17,7 @@ $ npm install
 $ npx parcel ./src/index.html
 ```
 
+### Clean build
+
+If you need to re-build Ruby itself (when you made a change to Ruby), clean `rubies` and `build` directories by `rake clean`, then re-execute `rake static/irb.wasm`
+

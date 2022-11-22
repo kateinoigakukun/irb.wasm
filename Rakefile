@@ -62,3 +62,9 @@ file "static/irb.wasm" => [] do
     sh "#{wasi_vfs.cli_bin_path} pack #{ruby_wasm} --mapdir /usr::#{File.join(tmpruby, "usr")} --mapdir /gems::./fake-gems -o static/irb.wasm"
   end
 end
+
+desc "Clean build artifacts"
+task :clean do
+  rm "static/irb.wasm"
+  Rake::Task[channel + ":clean"].invoke
+end
