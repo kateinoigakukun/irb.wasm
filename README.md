@@ -12,13 +12,13 @@ Demo: https://irb-wasm.vercel.app/
 ## Development
 
 ```console
-$ rake static/irb.wasm
+$ rake static/irb.wasm   # You can omit the argument as default task makes static/irb.wasm
 $ npm install
-$ npx parcel ./src/index.html
+$ rake parcel
 ```
 
 ### Clean build
 
-If you need to re-build Ruby itself (when you made a change to Ruby), clean `rubies` and `build` directories by `rake clean`, then re-execute `rake static/irb.wasm`
+If you need to re-build Ruby itself (when you made a change to Ruby), clean `rubies` and `build` directories by `rake deep_clean`, then re-execute `rake static/irb.wasm`
 
-If you just made a change to `fake-gems`, you only need to remove `static/irb.wasm` and re-execute `rake static/irb.wasm` to avoid rebuilding everything.
+If you just made a change to `fake-gems`, you only need to remove `static/irb.wasm` by `rake clean` and re-execute `rake static/irb.wasm` to avoid rebuilding everything.
