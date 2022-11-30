@@ -5,9 +5,7 @@ You can try irb.wasm on your browser. It works on CRuby ported to WebAssembly.
 
 Demo: https://irb-wasm.vercel.app/
 
-<div align="center">
-<img src=./docs/demo.png width="400px">
-</div>
+https://user-images.githubusercontent.com/8454208/204725289-fefe41e3-476b-4618-a61e-86069a94a4ca.mp4
 
 ## Development
 
