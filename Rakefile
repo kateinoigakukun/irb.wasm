@@ -1,8 +1,19 @@
 $LOAD_PATH << File.join(File.dirname(__FILE__), "vendor", "deps", "ruby.wasm", "lib")
 
 require "rake/tasklib"
-require "ruby_wasm/build_system"
-require "ruby_wasm/rake_task"
+retry_count = 0
+begin
+  require "ruby_wasm/build_system"
+  require "ruby_wasm/rake_task"
+rescue LoadError => e
+  if retry_count == 0
+    sh "git submodule update --init"
+    retry_count += 1
+    retry
+  else
+    raise e
+  end
+end
 
 Dir.glob("tasks/**.rake").each { |f| import f }
 
@@ -45,6 +56,8 @@ wasi_vfs = build_task.wasi_vfs
 
 RUBY_ROOT = File.join("rubies", channel)
 
+task :default => "static/irb.wasm"
+
 desc "Build irb.wasm"
 file "static/irb.wasm" => [] do
   wasi_vfs.install_cli
@@ -63,8 +76,17 @@ file "static/irb.wasm" => [] do
   end
 end
 
+desc "Deep clean build artifacts"
+task :deep_clean => :clean do
+  Rake::Task[channel + ":clean"].invoke
+end
+
 desc "Clean build artifacts"
 task :clean do
-  rm "static/irb.wasm"
-  Rake::Task[channel + ":clean"].invoke
+  rm_f "static/irb.wasm"
+end
+
+desc "Start local parcel server"
+task :parcel do
+  sh "npx parcel ./src/index.html"
 end

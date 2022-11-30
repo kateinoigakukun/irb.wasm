@@ -16,10 +16,57 @@ class SocketError; end
 
 def Dir.home = "/home/me"
 
+module Winsize
+  def winsize
+    [JS.global[:term][:rows].to_i, JS.global[:term][:cols].to_i]
+  end
+end
+
+class IO
+  # NOTE: $stdout also calls winsize in Reline
+  include Winsize
+end
 
 class NonBlockingIO
-  def gets
-    JS.global[:irbWorker][:lineBuffer].readLine.await.to_s
+  include Winsize
+
+  def raw(intr: nil, min: nil, time: nil, tim: nil, &block)
+    block&.call(self)
+  end
+
+  def read_nonblock(maxlen, outbuf = nil, exception: true)
+    outbuf = "" unless outbuf
+    while true
+      ch = JS.global[:irbWorker][:keyBuffer].getch.to_s
+      if ch == "null" || maxlen <= outbuf.length
+        break
+      else
+        outbuf << ch
+      end
+    end
+    if 0 < outbuf.length
+      outbuf
+    else
+      ""
+    end
+  end
+
+  def getbyte
+    getch&.ord
+  end
+
+  def getch
+    ch = JS.global[:irbWorker][:keyBuffer].getch.to_s
+    if ch.ord == 3 # Ctrl-C -> SIGINT
+      Process.kill :INT, Process.pid
+      nil
+    else
+      ch == "null" ? nil : ch
+    end
+  end
+
+  def getc
+    JS.global[:irbWorker][:keyBuffer].getc.await.to_s
   end
 
   def external_encoding
@@ -27,11 +74,22 @@ class NonBlockingIO
   end
 
   def wait_readable(timeout = nil)
-    true
+    return true if JS.global[:irbWorker][:keyBuffer].readable.to_s == "true"
+    if JS.global[:irbWorker][:keyBuffer].wait_readable(
+      # `1` is unused fallback because Reline always specifies timeout argument
+      JS.eval("return #{timeout || 1}")
+    ).await.to_s == "true"
+      return self
+    else
+      return nil
+    end
+  rescue
+    return nil
   end
 
-  def getc = "x"
-  def ungetc(c) = nil
+  def ungetc(c)
+    JS.global[:irbWorker][:keyBuffer].ungetc(c)
+  end
 end
 
 class IO
@@ -58,4 +116,18 @@ end
 def File.chmod(mode, *paths) = nil
 class File
   def chmod(mode) = nil
+end
+
+alias orig_puts puts
+def puts(*args)
+  args.each do |arg|
+    orig_puts(arg.respond_to?(:gsub) ? arg.gsub("\n", "\r\n") : arg)
+    print "\r"
+  end
+  nil
+end
+
+def sleep(sec)
+  JS.global[:irbWorker].sleep_ms(JS.eval("return #{sec * 1000}")).await
+  return sec.to_i
 end
