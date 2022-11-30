@@ -2,76 +2,9 @@ import { WASI } from "@wasmer/wasi";
 import { WasmFs } from "@wasmer/wasmfs";
 import * as path from "path-browserify";
 import { RubyVM } from "ruby-head-wasm-wasi"
-import stdlib_compat from "url:./ruby/stdlib_compat.rb";
-import rubygems_compat from "url:./ruby/rubygems_compat.rb";
-import bundler_compat from "url:./ruby/bundler_compat.rb";
-import reline_compat from "url:./ruby/reline_compat.rb";
 import irb_wasm from "url:../static/irb.wasm";
+import { Term } from "./terminals/terminal";
 
-class KeyBuffer {
-    private resolve: ((value: string) => void) | null = null;
-    private buffer: string = "";
-
-    async getc(): Promise<string> {
-        if (0 < this.buffer.length) {
-            const ch = this.buffer.charAt(0);
-            this.buffer = this.buffer.substr(1);
-            return ch;
-        }
-        return new Promise((resolve) => {
-            this.resolve = resolve;
-        });
-    }
-
-    readable() {
-        return (0 < this.buffer.length);
-    }
-
-    async block_until_readable(): Promise<any> {
-        if (0 < this.buffer.length) {
-            return;
-        }
-        return new Promise((resolve) => {
-            this.resolve = resolve;
-        });
-    }
-
-    async timeout(msec) {
-        return new Promise((_, reject) => setTimeout(reject, msec))
-    }
-
-    async wait_readable(sec: number) {
-        return Promise.race([this.block_until_readable(), this.timeout(sec * 1000)])
-    }
-
-    ungetc(c: string) {
-        this.buffer = c.concat(this.buffer);
-    }
-
-    getch() {
-        if (0 < this.buffer.length) {
-            const ch = this.buffer.charAt(0);
-            this.buffer = this.buffer.substr(1);
-            return ch;
-        } else {
-            return null;
-        }
-    }
-
-    push(key: string) {
-        if (this.resolve) {
-            const rslv = this.resolve;
-            this.resolve = null;
-            rslv(key);
-        } else {
-            const rslv = this.resolve;
-            this.buffer = this.buffer.concat(key);
-        }
-    }
-
-}
-
-type Term = { write: (line: string) => void, set_prompt: (prompt: string) => void };
 
 export class IRB {
     private instance: WebAssembly.Instance | null;
@@ -79,7 +12,7 @@ export class IRB {
     private wasmFs: WasmFs;
     private vm: RubyVM;
     private isTracingSyscall = false;
-    private keyBuffer = new KeyBuffer();
+    private term: Term;
 
     async fetchWithProgress(url: string, title: string, termWriter: Term): Promise<Uint8Array> {
         const response = await fetch(url);
@@ -114,6 +47,7 @@ export class IRB {
     }
 
     async init(termWriter: Term) {
+        this.term = termWriter;
         const buffer = await this.fetchWithProgress(irb_wasm, "Downloading irb.wasm", termWriter);
 
         const wasmFs = new WasmFs();
@@ -226,49 +160,7 @@ export class IRB {
     }
 
     start() {
-        this.vm.evalAsync(`
-            ap_path = __FILE__
-            STDOUT.sync = true
-            $0 = File::basename(ap_path, ".rb") if ap_path
-
-            def require_remote(path)
-                response = JS.global.fetch(path).await
-                text = response.text.await
-                Kernel.eval(text.to_s, TOPLEVEL_BINDING, path)
-            end
-
-            # This order works fine
-            require_remote "${stdlib_compat}"
-            require_remote "${rubygems_compat}"
-            require_remote "${bundler_compat}"
-            require "irb"
-            require "stringio"
-            require "js"
-            require "reline"
-            require_remote "${reline_compat}"
-
-            # This is to avoid stack overflow when Reline tries
-            # retrieving documentation at the first time
-            require "rdoc/rdoc"
-
-            class Term
-                def self.echo(text)
-                    JS.global.call("termEchoRaw", text)
-                end
-            end
-
-            IRB.setup(ap_path)
-
-            ENV["HOME"] = Dir.home # needed in reline/config.rb
-            ENV["TERM"] = "screen-256color" # makes IRB::Color.colorable? true
-            irb = IRB::Irb.new(nil, IRB::RelineInputMethod.new)
-            IRB.conf[:HISTORY_FILE] = File.join Dir.home, ".irb_history"
-            irb.run(IRB.conf)
-        `)
-    }
-
-    write(key: string) {
-        this.keyBuffer.push(key);
+        this.term.startIRB(this.vm);
     }
 
     async sleep_ms(ms) {

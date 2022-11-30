@@ -37,7 +37,7 @@ class NonBlockingIO
   def read_nonblock(maxlen, outbuf = nil, exception: true)
     outbuf = "" unless outbuf
     while true
-      ch = JS.global[:irbWorker][:keyBuffer].getch.to_s
+      ch = JS.global[:irbWorker][:term][:keyBuffer].getch.to_s
       if ch == "null" || maxlen <= outbuf.length
         break
       else
@@ -56,7 +56,7 @@ class NonBlockingIO
   end
 
   def getch
-    ch = JS.global[:irbWorker][:keyBuffer].getch.to_s
+    ch = JS.global[:irbWorker][:term][:keyBuffer].getch.to_s
     if ch.ord == 3 # Ctrl-C -> SIGINT
       Process.kill :INT, Process.pid
       nil
@@ -66,7 +66,7 @@ class NonBlockingIO
   end
 
   def getc
-    JS.global[:irbWorker][:keyBuffer].getc.await.to_s
+    JS.global[:irbWorker][:term][:keyBuffer].getc.await.to_s
   end
 
   def external_encoding
@@ -74,8 +74,8 @@ class NonBlockingIO
   end
 
   def wait_readable(timeout = nil)
-    return true if JS.global[:irbWorker][:keyBuffer].readable.to_s == "true"
-    if JS.global[:irbWorker][:keyBuffer].wait_readable(
+    return true if JS.global[:irbWorker][:term][:keyBuffer].readable.to_s == "true"
+    if JS.global[:irbWorker][:term][:keyBuffer].wait_readable(
       # `1` is unused fallback because Reline always specifies timeout argument
       JS.eval("return #{timeout || 1}")
     ).await.to_s == "true"
@@ -88,7 +88,7 @@ class NonBlockingIO
   end
 
   def ungetc(c)
-    JS.global[:irbWorker][:keyBuffer].ungetc(c)
+    JS.global[:irbWorker][:term][:keyBuffer].ungetc(c)
   end
 end
 
