@@ -23,7 +23,7 @@ class Gem::Request
     end
     response = JS.global.fetch(uri.to_s, options).await
     content_type = response[:headers].get("Content-Type").to_s
-    is_octet_stream = content_type.start_with?("application/octet-stream")
+    is_octet_stream = content_type.start_with?("application/octet-stream") || content_type == "binary/octet-stream"
     if uri.path.end_with?(".gem") or uri.path.end_with?(".rz") or is_octet_stream
       # FIXME: support class constructor and direct function call
       factory = JS.eval("return { make: (data) => new Uint8Array(data) }")
