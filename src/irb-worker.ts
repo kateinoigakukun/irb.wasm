@@ -1,7 +1,7 @@
 import { WASI } from "@wasmer/wasi";
 import { WasmFs } from "@wasmer/wasmfs";
 import * as path from "path-browserify";
-import { RubyVM } from "ruby-head-wasm-wasi"
+import { RubyVM } from "@ruby/wasm-wasi"
 import irb_wasm from "url:../static/irb.wasm";
 import { Term } from "./terminals/terminal";
 
