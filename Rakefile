@@ -3,7 +3,7 @@ $LOAD_PATH << File.join(File.dirname(__FILE__), "vendor", "deps", "ruby.wasm", "
 require "rake/tasklib"
 retry_count = 0
 begin
-  require "ruby_wasm/build_system"
+  require "ruby_wasm/build"
   require "ruby_wasm/rake_task"
 rescue LoadError => e
   if retry_count == 0
