@@ -47,7 +47,7 @@ export function makeJQueryTerminal(): Term {
     return {
         term, lineBuffer,
         write(line: string) {
-            term.echo(line, { newline: false });
+            term.echo(line, { newline: false, exec: false });
         },
         set_prompt(prompt) {
             term.set_prompt(prompt);
