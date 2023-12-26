@@ -36,10 +36,10 @@ class Gem::Request
     else
       body_str = body.inspect
     end
-    body_str = Net::BufferedIO.new(StringIO.new(body_str))
+    body_str = ::Gem::Net::BufferedIO.new(StringIO.new(body_str))
 
     status = response["status"].inspect
-    response_class = Net::HTTPResponse::CODE_TO_OBJ[status]
+    response_class = ::Gem::Net::HTTPResponse::CODE_TO_OBJ[status]
     response = response_class.new("2.0", status.to_i, nil)
 
     response.reading_body(body_str, true) {}

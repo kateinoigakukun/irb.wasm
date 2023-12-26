@@ -24,7 +24,11 @@ BUILD_DIR = File.join(Dir.pwd, "build")
 
 options = {
   target: "wasm32-unknown-wasi",
-  src: { name: "head", type: "github", repo: "ruby/ruby", rev: "v3_2_2", patches: [] },
+  src: {
+    name: "3.3",
+    type: "tarball",
+    url: "https://cache.ruby-lang.org/pub/ruby/3.3/ruby-3.3.0.tar.gz"
+  },
   default_exts: FULL_EXTS,
   build_dir: BUILD_DIR,
 }
