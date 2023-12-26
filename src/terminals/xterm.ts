@@ -174,7 +174,7 @@ export function makeXTermTerminal(): Term {
 
             ENV["HOME"] = Dir.home # needed in reline/config.rb
             ENV["TERM"] = "screen-256color" # makes IRB::Color.colorable? true
-            irb = IRB::Irb.new(nil, IRB::RelineInputMethod.new)
+            irb = IRB::Irb.new(nil, IRB::RelineInputMethod.new(IRB::RegexpCompletor.new))
             IRB.conf[:HISTORY_FILE] = File.join Dir.home, ".irb_history"
             irb.run(IRB.conf)
         `)

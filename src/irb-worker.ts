@@ -76,15 +76,15 @@ export class IRB {
         termWriter.write("$ #\r\n");
         termWriter.write("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
         termWriter.write("$ #\r\n");
-        termWriter.write("$ # QUICK START \r\n");
-        termWriter.write("require \"bundler/inline\"\r\n");
-        termWriter.write("gemfile do\r\n");
-        termWriter.write("  source \"https://rubygems.org\"\r\n");
-        termWriter.write("  gem \"parser\"\r\n");
-        termWriter.write("end\r\n");
-        termWriter.write("require \"parser/current\"\r\n");
-        termWriter.write("Parser::CurrentRuby.parse \"puts 'hello world'\"\r\n");
-        termWriter.write("$ #\r\n");
+        termWriter.write("$ cat EXAMPLES.rb \r\n");
+        termWriter.write(" \r\n");
+        termWriter.write("puts \"Hello, world!\"\r\n");
+        termWriter.write(" \r\n");
+        termWriter.write(`RubyVM::AbstractSyntaxTree.parse("puts :hello")\r\n`)
+        termWriter.write(" \r\n");
+        termWriter.write("require \"prism\"\r\n");
+        termWriter.write(`Prism.parse("puts :hello")\r\n`);
+        termWriter.write(" \r\n");
         termWriter.write("$ " + args.join(" ") + "\r\n");
         const vm = new RubyVM();
         wasmFs.fs.mkdirSync("/home/me", { mode: 0o777, recursive: true });
