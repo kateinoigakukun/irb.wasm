@@ -18,14 +18,10 @@ jobs:
           # avoid using system rubygems while installing docs
           # related issue: https://github.com/rubygems/rubygems/issues/3831
           sudo rm -rf /usr/lib/ruby/vendor_ruby/rubygems/defaults
-      - name: Set ENV
-        run: |
-          echo "GNUMAKEFLAGS=-j$((1 + $(nproc --all)))" >> $GITHUB_ENV
-          echo "RUBY_BUILD_CACHE_KEY=$(rake cache_key)" >> $GITHUB_ENV
-      - uses: actions/cache@v3
+      - uses: ruby/setup-ruby@v1
         with:
-          path: rubies
-          key: ${{ env.RUBY_BUILD_CACHE_KEY }}
+          ruby-version: 3.3.0
+          bundler-cache: true
       - name: Build irb
         run: rake static/irb.wasm
       - uses: actions/upload-artifact@v2
