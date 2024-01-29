@@ -159,6 +159,7 @@ export class IRB {
     }
 
     start() {
+        this.vm.eval(`require "/bundle/setup"`)
         this.term.startIRB(this.vm);
     }
 

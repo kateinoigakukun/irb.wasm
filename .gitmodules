@@ -1,3 +1,0 @@
-[submodule "vendor/deps/ruby.wasm"]
-	path = vendor/deps/ruby.wasm
-	url = https://github.com/ruby/ruby.wasm.git

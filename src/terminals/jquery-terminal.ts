@@ -55,6 +55,7 @@ export function makeJQueryTerminal(): Term {
         startIRB(vm) {
             vm.evalAsync(`
             require "stringio"
+            require "/bundle/setup"
             require "js"
             def require_remote(path)
                 response = JS.global.fetch(path).await

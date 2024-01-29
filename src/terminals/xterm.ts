@@ -140,6 +140,7 @@ export function makeXTermTerminal(): Term {
         set_prompt(prompt) { },
         startIRB(vm: RubyVM) {
             vm.evalAsync(`
+            require "js"
             ap_path = __FILE__
             STDOUT.sync = true
             $0 = File::basename(ap_path, ".rb") if ap_path
