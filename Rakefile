@@ -1,20 +1,4 @@
-$LOAD_PATH << File.join(File.dirname(__FILE__), "vendor", "deps", "ruby.wasm", "lib")
-
 require "rake/tasklib"
-retry_count = 0
-begin
-  require "ruby_wasm/build"
-  require "ruby_wasm/rake_task"
-rescue LoadError => e
-  if retry_count == 0
-    sh "git submodule update --init"
-    retry_count += 1
-    retry
-  else
-    raise e
-  end
-end
-
 task :default => "static/irb.wasm"
 
 desc "Build irb.wasm"
