@@ -69,7 +69,7 @@ export function makeJQueryTerminal(): Term {
               end
 
               def external_encoding
-                "US-ASCII"
+                "UTF-8"
               end
 
               def wait_readable(timeout = nil)
