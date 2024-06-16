@@ -10,7 +10,7 @@
     -webkit-appearance: none;
     -moz-appearance: none;
     width: 100%;
-    padding: 0.675em 6em 0.675em 1em;
+    padding: 0.4em 2.3em 0.4em 0.5em;
     border: 1px solid #caced1;
     border-radius: 0.25rem;
     color: #000;
@@ -45,7 +45,9 @@ div#terminal {
 }
 
 html, body {
-    height: 100%;
+    width: 100svw;
+    height: 100svh;
+    max-height: var(--visual-viewport-height);
     margin: 0;
     background-color: #000000;
 }

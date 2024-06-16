@@ -57,7 +57,11 @@ export class IRB {
         ];
         termWriter.set_prompt("");
         termWriter.write("$ #\r\n");
-        termWriter.write("$ # \x1B[32;1m irb.wasm - IRB on CRuby on WebAssembly\x1B[m\r\n");
+        termWriter.write("$ #\r\n");
+        termWriter.write("$ #\r\n");
+        termWriter.write("$ # \x1B[32;1m irb.wasm - IRB on WebAssembly\x1B[m\r\n");
+        termWriter.write("$ #\r\n");
+        termWriter.write("$ #\r\n");
         termWriter.write("$ #\r\n");
         termWriter.write("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
         termWriter.write("$ cat EXAMPLES.rb \r\n");

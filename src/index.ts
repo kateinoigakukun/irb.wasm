@@ -60,6 +60,21 @@ async function init() {
         }
     });
 
+    if (visualViewport) {
+        const vv = visualViewport;
+        const updateViewportHeight = () => {
+            document.documentElement.style.setProperty("--visual-viewport-height", `${vv.height}px`)
+            console.log("vv.height", vv.height)
+            globalThis.fitAddon?.fit();
+        }
+        vv.addEventListener("resize", updateViewportHeight);
+        updateViewportHeight();
+    } else {
+        document.documentElement.style.setProperty("--visual-viewport-height", "100vh")
+    }
+    // Do not allow scrolling
+    document.addEventListener("touchmove", (e) => e.preventDefault(), { passive: false });
+
     const irbWorker = new IRB();
 
     const term = makeTerminal();
