@@ -2,5 +2,5 @@
 
 source "https://rubygems.org"
 
-gem "ruby_wasm", "2.6.1"
-gem "js", "2.6.1"
+gem "ruby_wasm", git: "https://github.com/ruby/ruby.wasm", ref: "2024-06-15-a"
+gem "js", git: "https://github.com/ruby/ruby.wasm", ref: "2024-06-15-a", glob: "packages/gems/js/*.gemspec"
