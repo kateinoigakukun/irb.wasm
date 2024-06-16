@@ -6,7 +6,9 @@
     "@ruby/3.3-wasm-wasi": "2.6.1-2024-06-15-a",
     "jquery.terminal": "^2.31.1",
     "@xterm/xterm": "^5.3.0",
-    "@xterm/addon-fit": "^0.10.0"
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/addon-web-links": "^0.11.0",
+    "xterm-pty": "^0.10.1"
   },
   "devDependencies": {
     "buffer": "^6.0.3",

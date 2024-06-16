@@ -2,10 +2,22 @@
 import { IRB } from "./irb-worker";
 import { makeJQueryTerminal } from "./terminals/jquery-terminal"
 import { makeXTermTerminal } from "./terminals/xterm";
+import { makeXtermPtyTerminal } from "./terminals/xterm-pty";
 
 function makeTerminal() {
     const query = new URLSearchParams(window.location.search);
-    return query.get("FEATURE_XTERM_RELINE") === "1" ? makeXTermTerminal() : makeJQueryTerminal();
+    const key = query.get("FEATURE_TERMINAL") || (
+        query.get("FEATURE_XTERM_RELINE") === "1" ? "xterm" : "jquery-terminal"
+    )
+    switch (key) {
+        case "xterm":
+            return makeXTermTerminal();
+        case "xterm-pty":
+            return makeXtermPtyTerminal();
+        case "jquery-terminal":
+        default:
+            return makeJQueryTerminal();
+    }
 }
 
 async function init() {
