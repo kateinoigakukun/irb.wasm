@@ -145,12 +145,16 @@ export class IRB {
         const homeContents = new Map();
         const opfsRoot = await navigator.storage.getDirectory();
         for (const filePath of IRB.FILES_TO_SAVE) {
-            const handle = await opfsRoot.getFileHandle(filePath, { create: false });
-            if (!handle) { continue; }
-            const file = await handle.getFile();
-            const data = await file.arrayBuffer();
-            const fileNode = new File(new Uint8Array(data));
-            homeContents.set(filePath, fileNode);
+            try {
+                const handle = await opfsRoot.getFileHandle(filePath, { create: false });
+                if (!handle) { continue; }
+                const file = await handle.getFile();
+                const data = await file.arrayBuffer();
+                const fileNode = new File(new Uint8Array(data));
+                homeContents.set(filePath, fileNode);
+            } catch {
+                // ignore non-existing files
+            }
         }
         return new PreopenDirectory("/home", new Map([
             ["me", new Directory(homeContents)]
