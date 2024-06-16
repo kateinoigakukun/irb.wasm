@@ -8,18 +8,18 @@ import irb_head_wasm from "../node_modules/@ruby/head-wasm-wasi/dist/ruby.debug+
 
 function makeTerminal() {
     const query = new URLSearchParams(window.location.search);
-    const key = query.get("FEATURE_TERMINAL") || (
-        query.get("FEATURE_XTERM_RELINE") === "1" ? "xterm" : "jquery-terminal"
-    )
-    switch (key) {
-        case "xterm":
-            return makeXTermTerminal();
-        case "xterm-pty":
-            return makeXtermPtyTerminal();
-        case "jquery-terminal":
-        default:
-            return makeJQueryTerminal();
+    const defaultTerminal = "xterm-pty";
+    const key = query.get("FEATURE_TERMINAL") || defaultTerminal;
+    const terminals = {
+        "xterm": makeXTermTerminal,
+        "xterm-pty": makeXtermPtyTerminal,
+        "jquery-terminal": makeJQueryTerminal,
     }
+    if (terminals[key]) {
+        return terminals[key]();
+    }
+    // If invalid terminal key is provided, fallback to default terminal
+    return terminals[defaultTerminal]();
 }
 
 const rubyVersions = { "3.3": irb_3_3_wasm, "head": irb_head_wasm };
