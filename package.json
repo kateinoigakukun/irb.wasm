@@ -3,6 +3,7 @@
   "dependencies": {
     "@bjorn3/browser_wasi_shim": "^0.3.0",
     "@ruby/3.3-wasm-wasi": "2.6.1-2024-06-15-a",
+    "@ruby/head-wasm-wasi": "2.6.1-2024-06-15-a",
     "@ruby/wasm-wasi": "2.6.1-2024-06-15-a",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
