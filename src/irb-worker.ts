@@ -76,7 +76,16 @@ export class IRB {
         termWriter.write(`Prism.parse("puts :hello")\r\n`);
         termWriter.write(" \r\n");
 
-        const homeDir = await this.loadHomeDir();
+        let homeContents: Map<string, Fd>;
+        try {
+            homeContents = await this.loadHomeDir();
+        } catch {
+            homeContents = new Map();
+        }
+
+        const homeDir = new PreopenDirectory("/home", new Map([
+            ["me", new Directory(homeContents)]
+        ]));
 
         const fds = [
             new OpenFile(new File([])),
@@ -156,9 +165,7 @@ export class IRB {
                 // ignore non-existing files
             }
         }
-        return new PreopenDirectory("/home", new Map([
-            ["me", new Directory(homeContents)]
-        ]));
+        return homeContents
     }
 
     async snapshotHomeDir() {
