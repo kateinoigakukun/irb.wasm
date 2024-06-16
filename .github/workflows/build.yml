@@ -5,41 +5,12 @@ on:
   pull_request:
     branches: [main]
 jobs:
-  build:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-      - name: Install build tools from apt
-        run: sudo apt-get install ruby bison make autoconf git curl build-essential libyaml-dev zlib1g-dev -y
-      - name: Workaround for Debian ruby distribution
-        run: |
-          # avoid using system rubygems while installing docs
-          # related issue: https://github.com/rubygems/rubygems/issues/3831
-          sudo rm -rf /usr/lib/ruby/vendor_ruby/rubygems/defaults
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 3.3.0
-          bundler-cache: true
-      - name: Build irb
-        run: rake static/irb.wasm
-      - uses: actions/upload-artifact@v2
-        with:
-          name: irb.wasm
-          path: static/irb.wasm
-
   build-page:
     runs-on: ubuntu-22.04
-    needs: [build]
     steps:
       - uses: actions/checkout@v3
         with:
           submodules: true
-      - uses: actions/download-artifact@v2
-        with:
-          name: irb.wasm
-          path: static
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
