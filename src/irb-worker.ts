@@ -32,12 +32,14 @@ export class IRB {
                 }
                 buffer.set(value, offset);
                 const progress = offset / contentLength;
+                termWriter.set_prompt(`${title} ${Math.floor(progress * 100)}%`);
                 offset += value.length;
             }
             return buffer;
         } else {
             let dots = 0;
             const indicator = setInterval(() => {
+                termWriter.set_prompt(`${title} ${".".repeat(dots)}`);
                 dots = (dots + 1) % 4;
             }, 200);
             const buffer = await response.arrayBuffer();
@@ -53,6 +55,7 @@ export class IRB {
         const args = [
             "irb.wasm", "-e_=0", "-EUTF-8", "-I/gems/lib"
         ];
+        termWriter.set_prompt("");
         termWriter.write("$ #\r\n");
         termWriter.write("$ # \x1B[32;1m irb.wasm - IRB on CRuby on WebAssembly\x1B[m\r\n");
         termWriter.write("$ #\r\n");

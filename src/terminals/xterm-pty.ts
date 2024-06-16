@@ -43,7 +43,9 @@ export function makeXtermPtyTerminal(): Term {
         write(line) {
             slave.write(line);
         },
-        set_prompt(prompt) { },
+        set_prompt(prompt) {
+            slave.write(`\r\x1B[K\r${prompt}\r`);
+        },
         async startIRB(vm) {
             vm.eval("-> js_funcs { JSFuncs = js_funcs }").call("call", vm.wrap({
                 winsize: () => slave.ioctl("TIOCGWINSZ"),
