@@ -40,7 +40,8 @@
 div#terminal {
     --color: #ffffff;
     --size: 1.3;
-    --font: sfmono-regular,consolas,menlo,dejavu sans mono,monospace
+    --font: sfmono-regular,consolas,menlo,dejavu sans mono,monospace;
+    height: 100%;
 }
 
 html, body {
