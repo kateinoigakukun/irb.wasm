@@ -91,6 +91,12 @@ async function init() {
     await irbWorker.init(term, currentRubyVersion)
 
     irbWorker.start();
+
+    // Save history and .irbrc every 5 seconds
+    setInterval(() => {
+        console.info("Snapshotting home directory")
+        irbWorker.snapshotHomeDir();
+    }, 5000);
 }
 
 init()

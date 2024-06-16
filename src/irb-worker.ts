@@ -1,6 +1,7 @@
 import { RubyVM, consolePrinter } from "@ruby/wasm-wasi"
 import { Term } from "./terminals/terminal";
 import { Directory, File, OpenFile, PreopenDirectory, WASI, strace } from "@bjorn3/browser_wasi_shim";
+import { Fd, OpenSyncOPFSFile, SyncOPFSFile } from "@bjorn3/browser_wasi_shim/typings";
 
 export type RubyVersion = {
     version: string,
@@ -12,6 +13,7 @@ export class IRB {
     private wasi: WASI;
     private vm: RubyVM;
     private isTracingSyscall = false;
+    private homeDir: PreopenDirectory;
     private term: Term;
 
     async fetchWithProgress(url: string, title: string, termWriter: Term): Promise<Uint8Array> {
@@ -73,15 +75,14 @@ export class IRB {
         termWriter.write("require \"prism\"\r\n");
         termWriter.write(`Prism.parse("puts :hello")\r\n`);
         termWriter.write(" \r\n");
+
+        const homeDir = await this.loadHomeDir();
+
         const fds = [
             new OpenFile(new File([])),
             new OpenFile(new File([])),
             new OpenFile(new File([])),
-            new PreopenDirectory("/home/me", new Map([
-                [".gem", new Directory(new Map([
-                    ["specs", new Directory(new Map([]))],
-                ]))]
-            ])),
+            homeDir,
             new PreopenDirectory("/dev", new Map([
                 ["null", new File([])],
             ]))
@@ -118,6 +119,7 @@ export class IRB {
         this.instance = instance;
         this.wasi = wasi
         this.vm = vm;
+        this.homeDir = homeDir;
     }
 
     start() {
@@ -134,4 +136,38 @@ export class IRB {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
+    static FILES_TO_SAVE: string[] = [
+        ".irbrc",
+        ".irb_history",
+    ];
+
+    async loadHomeDir() {
+        const homeContents = new Map();
+        const opfsRoot = await navigator.storage.getDirectory();
+        for (const filePath of IRB.FILES_TO_SAVE) {
+            const handle = await opfsRoot.getFileHandle(filePath, { create: false });
+            if (!handle) { continue; }
+            const file = await handle.getFile();
+            const data = await file.arrayBuffer();
+            const fileNode = new File(new Uint8Array(data));
+            homeContents.set(filePath, fileNode);
+        }
+        return new PreopenDirectory("/home", new Map([
+            ["me", new Directory(homeContents)]
+        ]));
+    }
+
+    async snapshotHomeDir() {
+        this.vm.eval("IRB.conf[:MAIN_CONTEXT].io.save_history")
+        const opfsRoot = await navigator.storage.getDirectory();
+        const homeMe = this.homeDir.dir.contents.get("me");
+        for (const file of IRB.FILES_TO_SAVE) {
+            const fd = homeMe.contents.get(file)
+            if (!(fd instanceof File)) { continue; }
+            const handle = await opfsRoot.getFileHandle(file, { create: true });
+            const writable = await handle.createWritable();
+            await writable.write(fd.data);
+            await writable.close();
+        }
+    }
 }
