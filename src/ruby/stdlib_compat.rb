@@ -103,6 +103,15 @@ class IO
     end
     alias_method :open, :fake_open
   end
+
+  # TODO(katei): Return WASI_RIGHTS_FD_SEEK | WASI_RIGHTS_FD_TELL as rights_base
+  # https://github.com/WebAssembly/wasi-libc/blob/ad5133410f66b93a2381db5b542aad5e0964db96/libc-bottom-half/sources/isatty.c
+  def tty?
+    case to_i
+    when 0, 1, 2; true
+    else false
+    end
+  end
 end
 
 class Thread
