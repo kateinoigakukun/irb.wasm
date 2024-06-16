@@ -9,4 +9,4 @@ yum groupinstall "Development Tools" -y
 yum install ruby bison make autoconf git curl libyaml-devel zlib-devel -y
 
 rake static/irb.wasm
-npx parcel build ./src/index.html
+npx vite build

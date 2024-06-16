@@ -5,9 +5,9 @@ import initUnixFormatting from "jquery.terminal/js/unix_formatting"
 import "jquery.terminal/css/jquery.terminal.css"
 import { Term } from "./terminal";
 
-import stdlib_compat from "url:../ruby/stdlib_compat.rb";
-import rubygems_compat from "url:../ruby/rubygems_compat.rb";
-import bundler_compat from "url:../ruby/bundler_compat.rb";
+import stdlib_compat from "../ruby/stdlib_compat.rb?url";
+import rubygems_compat from "../ruby/rubygems_compat.rb?url";
+import bundler_compat from "../ruby/bundler_compat.rb?url";
 
 initTerminalPlugin(jQuery)
 initUnixFormatting(window, jQuery)

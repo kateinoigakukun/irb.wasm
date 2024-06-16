@@ -12,7 +12,7 @@ https://user-images.githubusercontent.com/8454208/204725289-fefe41e3-476b-4618-a
 ```console
 $ rake static/irb.wasm   # You can omit the argument as default task makes static/irb.wasm
 $ npm install
-$ rake parcel
+$ npx vite
 ```
 
 ### Clean build

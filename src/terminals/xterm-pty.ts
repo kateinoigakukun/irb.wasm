@@ -4,7 +4,7 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import { openpty } from "xterm-pty";
 
-import main_rb from "url:../ruby/xterm_pty_main.rb";
+import main_rb from "../ruby/xterm_pty_main.rb?url";
 
 
 const setupTerminal = () => {

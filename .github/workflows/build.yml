@@ -46,7 +46,7 @@ jobs:
       - name: Bundle web resources
         run: |
           npm install
-          npx parcel build src/index.html
+          npx vite build
       - uses: actions/upload-artifact@v2
         with:
           name: dist

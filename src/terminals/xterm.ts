@@ -5,10 +5,10 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import { Term } from "./terminal";
 
-import stdlib_compat from "url:../ruby/stdlib_compat.rb";
-import rubygems_compat from "url:../ruby/rubygems_compat.rb";
-import bundler_compat from "url:../ruby/bundler_compat.rb";
-import reline_compat from "url:../ruby/reline_compat.rb";
+import stdlib_compat from "../ruby/stdlib_compat.rb?url";
+import rubygems_compat from "../ruby/rubygems_compat.rb?url";
+import bundler_compat from "../ruby/bundler_compat.rb?url";
+import reline_compat from "../ruby/reline_compat.rb?url";
 
 class KeyBuffer {
     private resolve: ((value: string) => void) | null = null;

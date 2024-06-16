@@ -1,8 +1,7 @@
 import { RubyVM, consolePrinter } from "@ruby/wasm-wasi"
-import irb_wasm from "url:../static/irb.wasm";
+import irb_wasm from "../static/irb.wasm?url";
 import { Term } from "./terminals/terminal";
-// @ts-ignore
-import { Directory, File, OpenFile, PreopenDirectory, WASI, strace } from "@bjorn3/browser_wasi_shim/dist/index.js";
+import { Directory, File, OpenFile, PreopenDirectory, WASI, strace } from "@bjorn3/browser_wasi_shim";
 
 
 export class IRB {

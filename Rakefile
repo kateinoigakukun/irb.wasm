@@ -11,8 +11,3 @@ desc "Clean build artifacts"
 task :clean do
   rm_f "static/irb.wasm"
 end
-
-desc "Start local parcel server"
-task :parcel do
-  sh "npx parcel ./src/index.html"
-end
