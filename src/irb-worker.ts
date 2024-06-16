@@ -1,6 +1,7 @@
 import { RubyVM, consolePrinter } from "@ruby/wasm-wasi"
 import irb_wasm from "url:../static/irb.wasm";
 import { Term } from "./terminals/terminal";
+// @ts-ignore
 import { Directory, File, OpenFile, PreopenDirectory, WASI, strace } from "@bjorn3/browser_wasi_shim/dist/index.js";
 
 
@@ -96,7 +97,7 @@ export class IRB {
         printer.addToImports(imports)
         vm.addToImports(imports)
         const { instance } = await WebAssembly.instantiate(buffer, imports);
-        printer.setMemory(instance.exports.memory);
+        printer.setMemory(instance.exports.memory as any);
         await vm.setInstance(instance);
 
         wasi.initialize(instance as any);
