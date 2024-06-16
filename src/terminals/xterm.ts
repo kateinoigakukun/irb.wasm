@@ -1,8 +1,8 @@
 // @ts-ignore
 import { RubyVM } from "ruby-head-wasm-wasi";
-import { Terminal } from "xterm";
-import { FitAddon } from "xterm-addon-fit";
-import "xterm/css/xterm.css";
+import { Terminal } from "@xterm/xterm";
+import { FitAddon } from "@xterm/addon-fit";
+import "@xterm/xterm/css/xterm.css";
 import { Term } from "./terminal";
 
 import stdlib_compat from "url:../ruby/stdlib_compat.rb";
