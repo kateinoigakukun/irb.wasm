@@ -1,8 +1,11 @@
 import { RubyVM, consolePrinter } from "@ruby/wasm-wasi"
-import irb_wasm from "../static/irb.wasm?url";
 import { Term } from "./terminals/terminal";
 import { Directory, File, OpenFile, PreopenDirectory, WASI, strace } from "@bjorn3/browser_wasi_shim";
 
+export type RubyVersion = {
+    version: string,
+    url: string,
+}
 
 export class IRB {
     private instance: WebAssembly.Instance | null;
@@ -43,9 +46,9 @@ export class IRB {
         }
     }
 
-    async init(termWriter: Term) {
+    async init(termWriter: Term, rubyVersion: RubyVersion) {
         this.term = termWriter;
-        const buffer = await this.fetchWithProgress(irb_wasm, "Downloading irb.wasm", termWriter);
+        const buffer = await this.fetchWithProgress(rubyVersion.url, "Downloading irb.wasm", termWriter);
 
         const args = [
             "irb.wasm", "-e_=0", "-I/gems/lib"
@@ -54,7 +57,6 @@ export class IRB {
         termWriter.write("$ # \x1B[32;1m irb.wasm - IRB on CRuby on WebAssembly\x1B[m\r\n");
         termWriter.write("$ #\r\n");
         termWriter.write("$ # Source code is available at https://github.com/kateinoigakukun/irb.wasm\r\n");
-        termWriter.write("$ #\r\n");
         termWriter.write("$ cat EXAMPLES.rb \r\n");
         termWriter.write(" \r\n");
         termWriter.write("puts \"Hello, world!\"\r\n");
@@ -64,7 +66,6 @@ export class IRB {
         termWriter.write("require \"prism\"\r\n");
         termWriter.write(`Prism.parse("puts :hello")\r\n`);
         termWriter.write(" \r\n");
-        termWriter.write("$ " + args.join(" ") + "\r\n");
         const fds = [
             new OpenFile(new File([])),
             new OpenFile(new File([])),
@@ -102,6 +103,10 @@ export class IRB {
         wasi.initialize(instance as any);
         (instance.exports._initialize as Function)();
         vm.initialize(args);
+
+        termWriter.write("$ ruby --version\r\n");
+        vm.printVersion();
+        termWriter.write("$ " + args.join(" ") + "\r\n");
 
         this.instance = instance;
         this.wasi = wasi

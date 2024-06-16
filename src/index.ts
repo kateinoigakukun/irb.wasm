@@ -3,6 +3,8 @@ import { IRB } from "./irb-worker";
 import { makeJQueryTerminal } from "./terminals/jquery-terminal"
 import { makeXTermTerminal } from "./terminals/xterm";
 import { makeXtermPtyTerminal } from "./terminals/xterm-pty";
+import irb_3_3_wasm from "../static/irb-3.3.wasm?url";
+import irb_head_wasm from "../static/irb-head.wasm?url";
 
 function makeTerminal() {
     const query = new URLSearchParams(window.location.search);
@@ -20,9 +22,45 @@ function makeTerminal() {
     }
 }
 
-async function init() {
-    const irbWorker = new IRB();
+const rubyVersions = { "3.3": irb_3_3_wasm, "head": irb_head_wasm };
+const defaultRubyVersion = "head";
 
+function deriveCurrentRubyVersion() {
+    const query = new URLSearchParams(window.location.search);
+    const rubyVersion = query.get("RUBY_VERSION") || defaultRubyVersion;
+    if (rubyVersions[rubyVersion]) {
+        return { version: rubyVersion, url: rubyVersions[rubyVersion] };
+    }
+    return { version: defaultRubyVersion, url: rubyVersions[defaultRubyVersion] };
+}
+
+async function init() {
+    const currentRubyVersion = deriveCurrentRubyVersion();
+    const rubyVersionSelect = document.getElementById("ruby-version")! as HTMLSelectElement;
+    rubyVersionSelect.appendChild((() => {
+        const option = document.createElement("option");
+        option.value = "";
+        option.text = "Select Ruby version";
+        option.disabled = true;
+        return option;
+    })())
+    for (const version of Object.keys(rubyVersions).sort()) {
+        const option = document.createElement("option");
+        option.value = version;
+        option.text = version;
+        rubyVersionSelect.appendChild(option);
+    }
+    rubyVersionSelect.value = currentRubyVersion.version;
+    rubyVersionSelect.addEventListener("change", () => {
+        const version = rubyVersionSelect.value;
+        if (version) {
+            const params = new URLSearchParams(window.location.search);
+            params.set("RUBY_VERSION", version);
+            window.location.search = params.toString();
+        }
+    });
+
+    const irbWorker = new IRB();
 
     const term = makeTerminal();
     // @ts-ignore
@@ -35,7 +73,7 @@ async function init() {
         term.write(str);
     }
 
-    await irbWorker.init(term)
+    await irbWorker.init(term, currentRubyVersion)
 
     irbWorker.start();
 }
