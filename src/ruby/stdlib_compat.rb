@@ -90,6 +90,10 @@ class NonBlockingIO
   def ungetc(c)
     JS.global[:irbWorker][:term][:keyBuffer].ungetc(c)
   end
+
+  def tty?
+    true
+  end
 end
 
 class IO

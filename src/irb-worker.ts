@@ -118,6 +118,11 @@ export class IRB {
 
     start() {
         this.vm.eval(`require "/bundle/setup"`)
+        this.vm.eval(`
+            # Hack to ignore "require 'io/console'" and "require 'io/wait'"
+            $LOADED_FEATURES << "io/console" << "io/wait" << "socket"
+            Gem::Specification.find_by_name("reline").dependencies.clear
+        `)
         this.term.startIRB(this.vm);
     }
 

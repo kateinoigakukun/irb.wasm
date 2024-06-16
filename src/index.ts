@@ -3,8 +3,8 @@ import { IRB } from "./irb-worker";
 import { makeJQueryTerminal } from "./terminals/jquery-terminal"
 import { makeXTermTerminal } from "./terminals/xterm";
 import { makeXtermPtyTerminal } from "./terminals/xterm-pty";
-import irb_3_3_wasm from "../static/irb-3.3.wasm?url";
-import irb_head_wasm from "../static/irb-head.wasm?url";
+import irb_3_3_wasm from "../node_modules/@ruby/3.3-wasm-wasi/dist/ruby.debug+stdlib.wasm?url";
+import irb_head_wasm from "../node_modules/@ruby/head-wasm-wasi/dist/ruby.debug+stdlib.wasm?url"
 
 function makeTerminal() {
     const query = new URLSearchParams(window.location.search);

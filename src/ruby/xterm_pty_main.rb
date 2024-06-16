@@ -1,9 +1,4 @@
 require "js"
-
-# Hack to ignore "require 'io/console'" and "require 'io/wait'"
-$LOADED_FEATURES << "io/console" << "io/wait"
-Gem::Specification.find_by_name("reline").dependencies.clear
-
 # io shim
 class IO
   alias getbyte_orig getbyte
