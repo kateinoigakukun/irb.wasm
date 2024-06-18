@@ -102,14 +102,14 @@ export class IRB {
             "GEM_SPEC_CACHE=/home/me/.gem/specs",
             "TERM=xterm-256color",
         ]
-        const wasi = new WASI(args, env, fds);
+        const wasi = new WASI(args, env, fds, { debug: false });
         const vm = new RubyVM();
         const printer = consolePrinter({
             stdout: termWriter.write.bind(termWriter),
             stderr: termWriter.write.bind(termWriter),
         });
         const imports = {
-            wasi_snapshot_preview1: strace(wasi.wasiImport, []),
+            wasi_snapshot_preview1: this.isTracingSyscall ? strace(wasi.wasiImport, []) : wasi.wasiImport,
         }
         printer.addToImports(imports)
         vm.addToImports(imports)
