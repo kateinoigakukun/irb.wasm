@@ -6,9 +6,12 @@ import { makeXtermPtyTerminal } from "./terminals/xterm-pty";
 import irb_3_3_wasm from "../node_modules/@ruby/3.3-wasm-wasi/dist/ruby.debug+stdlib.wasm?url";
 import irb_head_wasm from "../node_modules/@ruby/head-wasm-wasi/dist/ruby.debug+stdlib.wasm?url"
 
-function makeTerminal() {
+function makeTerminal(rubyVersion: string) {
     const query = new URLSearchParams(window.location.search);
-    const defaultTerminal = "xterm-pty";
+    const defaultTerminal = {
+        // FIXME: irb (or reline?) in 3.3.3 seems not working well with xterm-pty
+        "3.3": "jquery-terminal",
+    }[rubyVersion] || "xterm-pty";
     const key = query.get("FEATURE_TERMINAL") || defaultTerminal;
     const terminals = {
         "xterm": makeXTermTerminal,
@@ -77,7 +80,7 @@ async function init() {
 
     const irbWorker = new IRB();
 
-    const term = makeTerminal();
+    const term = makeTerminal(currentRubyVersion.version);
     // @ts-ignore
     window.irbWorker = irbWorker
     console.log("irbWorker", irbWorker)
