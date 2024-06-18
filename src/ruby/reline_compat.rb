@@ -6,12 +6,3 @@ module Reline
     end
   end
 end
-
-module Timeout
-  def self.timeout(sec, klass = nil, message = nil, &block)
-    # possible problem
-    # See Reline using `Timeout.timeout` twice
-    yield
-  end
-end
-
