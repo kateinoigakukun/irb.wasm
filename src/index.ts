@@ -67,7 +67,6 @@ async function init() {
         const vv = visualViewport;
         const updateViewportHeight = () => {
             document.documentElement.style.setProperty("--visual-viewport-height", `${vv.height}px`)
-            console.log("vv.height", vv.height)
             globalThis.fitAddon?.fit();
         }
         vv.addEventListener("resize", updateViewportHeight);
@@ -83,7 +82,6 @@ async function init() {
     const term = makeTerminal(currentRubyVersion.version);
     // @ts-ignore
     window.irbWorker = irbWorker
-    console.log("irbWorker", irbWorker)
     // @ts-ignore
     window.term = term;
     // @ts-ignore
@@ -97,7 +95,6 @@ async function init() {
 
     // Save history and .irbrc every 5 seconds
     setInterval(() => {
-        console.info("Snapshotting home directory")
         irbWorker.snapshotHomeDir();
     }, 5000);
 }
