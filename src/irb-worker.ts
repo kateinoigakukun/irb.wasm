@@ -21,33 +21,17 @@ export class IRB {
         if (!response.ok || response.body === null) {
             throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
         }
-        const contentLengthField = response.headers.get("Content-Length");
-        if (contentLengthField !== null) {
-            const reader = response.body.getReader();
-            const contentLength = parseInt(contentLengthField, 10);
-            const buffer = new Uint8Array(contentLength);
-            let offset = 0;
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
-                buffer.set(value, offset);
-                const progress = offset / contentLength;
-                termWriter.set_prompt(`${title} ${Math.floor(progress * 100)}%`);
-                offset += value.length;
-            }
-            return buffer;
-        } else {
-            let dots = 0;
-            const indicator = setInterval(() => {
-                termWriter.set_prompt(`${title} ${".".repeat(dots)}`);
-                dots = (dots + 1) % 4;
-            }, 200);
-            const buffer = await response.arrayBuffer();
-            clearInterval(indicator);
-            return new Uint8Array(buffer);
-        }
+	let dots = 0;
+	const indicator = setInterval(() => {
+	    termWriter.set_prompt(`${title} ${".".repeat(dots)}`);
+	    dots = (dots + 1) % 4;
+	}, 200);
+	try {
+	    const buffer = await response.arrayBuffer();
+	    return new Uint8Array(buffer);
+	} finally {
+	    clearInterval(indicator);
+	}
     }
 
     async init(termWriter: Term, rubyVersion: RubyVersion) {
