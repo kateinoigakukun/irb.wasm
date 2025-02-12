@@ -1,9 +1,12 @@
 require "js"
 # io shim
 class IO
+  @@ungetc_buf = []
+
   alias getbyte_orig getbyte
   def getbyte
     if to_i == 0
+      return @@ungetc_buf.pop.ord if !@@ungetc_buf.empty?
       c = JSFuncs[:getByte].apply().await
       return c == JS::Null ? nil : c.to_i
     end
@@ -12,20 +15,52 @@ class IO
 
   alias getc_orig getc
   def getc
-    return getbyte&.chr if to_i == 0
+    if to_i == 0
+      return @@ungetc_buf.pop.chr if !@@ungetc_buf.empty?
+      return getbyte&.chr
+    end
     getc_orig
   end
 
   alias read_nonblock_orig read_nonblock
   def read_nonblock(size, outbuf = nil, exception: true)
     if to_i == 0
+      if @@ungetc_buf.empty?
+        b = nil
+      else
+        # XXX: This might return a buffer larger than the specified size,
+        # but I believe it's OK ;-P
+        b = @@ungetc_buf.reverse.join
+        @@ungetc_buf.clear
+      end
       s = JSFuncs[:readNonblock].apply(size).await
-      return nil if s == JS::Null
+      return b if s == JS::Null
       s = s.to_s
       s = outbuf.replace(s) if outbuf
+      s = b + s if b
       return s
     end
     read_nonblock_orig(size, outbuf, exception:)
+  end
+
+  alias readpartial_orig readpartial
+  def readpartial(n)
+    if to_i == 0
+      c = getc
+      s = read_nonblock(n - 1)
+      s = s ? c + s : c
+      return s
+    end
+    readpartial_orig(n)
+  end
+
+  alias ungetc_orig ungetc
+  def ungetc(n)
+    if to_i == 0
+      @@ungetc_buf << n.chr
+      return nil
+    end
+    ungetc_orig(n)
   end
 end
 

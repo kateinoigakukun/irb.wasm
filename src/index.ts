@@ -4,6 +4,7 @@ import { makeJQueryTerminal } from "./terminals/jquery-terminal"
 import { makeXTermTerminal } from "./terminals/xterm";
 import { makeXtermPtyTerminal } from "./terminals/xterm-pty";
 import irb_3_3_wasm from "../node_modules/@ruby/3.3-wasm-wasi/dist/ruby.debug+stdlib.wasm?url";
+import irb_3_4_wasm from "../node_modules/@ruby/3.4-wasm-wasi/dist/ruby.debug+stdlib.wasm?url";
 import irb_head_wasm from "../node_modules/@ruby/head-wasm-wasi/dist/ruby.debug+stdlib.wasm?url"
 
 function makeTerminal(rubyVersion: string) {
@@ -25,7 +26,7 @@ function makeTerminal(rubyVersion: string) {
     return terminals[defaultTerminal]();
 }
 
-const rubyVersions = { "3.3": irb_3_3_wasm, "head": irb_head_wasm };
+const rubyVersions = { "3.3": irb_3_3_wasm, "3.4": irb_3_4_wasm, "head": irb_head_wasm };
 const defaultRubyVersion = "head";
 
 function deriveCurrentRubyVersion() {
