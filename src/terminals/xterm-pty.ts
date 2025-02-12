@@ -93,7 +93,9 @@ export function makeXtermPtyTerminal(): Term {
                     return null;
                 },
                 readNonblock: async (size) => {
-                    if (slave.readable) return slave.read(size);
+                    if (slave.readable) {
+                            return (new TextDecoder).decode(new Uint8Array(slave.read(size)));
+                    }
                     return null;
                 },
                 sleep: async (duration) => {
