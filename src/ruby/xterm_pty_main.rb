@@ -117,6 +117,16 @@ ENV["TERM"] = "xterm-256color"
 
 require "irb"
 
+# A workaround to skip permission check
+# because @bjorn3/browser_wasi_shim does not implement permissions
+module IRB
+  module HistorySavingAbility
+    def ensure_history_file_writable(_)
+      true
+    end
+  end
+end
+
 # Run irb
 IRB.setup(nil, argv: ['--no-pager'])
 IRB::Irb.new.run
